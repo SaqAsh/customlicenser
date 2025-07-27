@@ -63,7 +63,7 @@ A flexible VS Code extension that streamlines license management for your projec
 When you add an MIT license to a JavaScript file, it will insert:
 
 ```javascript
-/*
+/**
  * MIT License
  *
  * Copyright (c) 2024 Your Name
@@ -116,7 +116,7 @@ Configure the extension through VS Code settings:
 | `insertAtTop`         | boolean | true                  | Insert license at file beginning                               |
 | `skipExistingLicense` | boolean | true                  | Skip files that already have licenses                          |
 
-## �� Custom Licenses
+## 🎨 Custom Licenses
 
 ### Creating Custom Licenses
 
@@ -149,196 +149,6 @@ of this file, via any medium, is strictly prohibited.
 Contact: {{EMAIL}}
 ```
 
-## 🏗️ Architecture Overview
-
-### Core Files
-
-#### **`src/extension.ts`** - Main Extension Entry Point
-- Registers all VS Code commands
-- Initializes background services
-- Handles extension activation/deactivation
-- Main orchestrator for license operations
-
-#### **`src/BackgroundUtilities/`** - Core Business Logic
-
-**`commentTypeManger.ts`**
-- Detects programming language of current file
-- Determines appropriate comment style (line vs block)
-- Supports 17+ languages (Python, JavaScript, Java, C++, etc.)
-
-**`licenseReader.ts`**
-- Reads license templates from files
-- Handles custom license input
-- Processes template variables (`{{name}}`, `{{year}}`, `{{email}}`)
-
-**`licenseInserter.ts`**
-- Inserts formatted licenses into files
-- Checks for existing licenses
-- Handles file positioning and formatting
-
-**`licenseOrchestrator.ts`**
-- Main workflow coordinator
-- Combines all utilities for complete license operations
-- Handles error cases and user feedback
-
-**`licenseDetector.ts`**
-- Background service for license monitoring
-- Shows status bar with coverage percentage
-- Watches files for changes
-- Provides coverage reporting
-
-**`autoAddOnSave.ts`**
-- Automatically adds default license when saving
-- Respects user settings and file types
-- Silent operation to avoid disrupting workflow
-
-**`fileTypeManager.ts`**
-- Gets current file information
-- Extracts language ID and file path
-- Used by comment type manager
-
-#### **`src/Commands/`** - User Interface Layer
-
-**`selectLicenseToAdd.ts`**
-- Shows license selection quick pick
-- Defines available license types
-- Handles user selection
-
-**`addCustomLicense.ts`**
-- Prompts for custom license text
-- Validates input
-- Formats with appropriate comment style
-
-**`editCustomLicense.ts`**
-- Manages custom license templates
-- Create, edit, and delete custom licenses
-- Stores in workspace configuration
-
-**`selectDefaultLicense.ts`**
-- Sets default license for workspace
-- Saves to workspace configuration
-- Used by auto-add functionality
-
-**`toggleAutoAddOnSave.ts`**
-- Enables/disables auto-add feature
-- Updates workspace settings
-- Provides user feedback
-
-**`addYear.ts`**
-- Sets current year for license templates
-- Updates workspace configuration
-- Used by template processing
-
-#### **`src/types/`** - Type Definitions
-
-**`CommentLookup.ts`**
-- Defines comment styles for each language
-- Discriminated union types for type safety
-- Supports line comments (`#`, `//`) and block comments (`/* */`)
-
-#### **`src/LicenseTemplates/`** - License Templates
-
-Contains standard license templates:
-- `MIT.txt` - MIT License
-- `Apache.txt` - Apache 2.0 License  
-- `GPL.txt` - GNU General Public License
-- `BSD.txt` - BSD 3-Clause License
-- `ISC.txt` - ISC License
-- `Mozilla.txt` - Mozilla Public License
-
-All templates support variable substitution:
-- `{{year}}` - Current year
-- `{{name}}` - Author name
-- `{{email}}` - Author email
-
-## 🎯 How It Works
-
-### 1. **License Selection**
-```
-User selects license → Quick pick shows options → Template is loaded
-```
-
-### 2. **Language Detection**
-```
-File opened → Language ID detected → Comment style determined
-```
-
-### 3. **Template Processing**
-```
-Template loaded → Variables substituted → Comment formatting applied
-```
-
-### 4. **File Insertion**
-```
-Formatted license → Inserted at file top → File saved
-```
-
-### 5. **Background Monitoring**
-```
-Files watched → License detection → Status bar updated
-```
-
-## 📊 Status Bar
-
-The extension shows license coverage in the status bar:
-- `License: 5/10 (50%)` - Shows files with licenses vs total
-- Click to view detailed coverage report
-- Updates automatically as files change
-
-## 📁 File Structure
-
-```
-src/
-├── extension.ts                    # Main extension entry point
-├── BackgroundUtilities/            # Core business logic
-│   ├── commentTypeManger.ts       # Language/comment detection
-│   ├── licenseReader.ts           # Template reading/processing
-│   ├── licenseInserter.ts         # File insertion logic
-│   ├── licenseOrchestrator.ts     # Main workflow coordinator
-│   ├── licenseDetector.ts         # Background monitoring
-│   ├── autoAddOnSave.ts           # Auto-add functionality
-│   └── fileTypeManager.ts         # File type detection
-├── Commands/                      # User interface layer
-│   ├── selectLicenseToAdd.ts      # License selection UI
-│   ├── addCustomLicense.ts        # Custom license creation
-│   ├── editCustomLicense.ts       # Custom license management
-│   ├── selectDefaultLicense.ts    # Default license setting
-│   ├── toggleAutoAddOnSave.ts     # Auto-add toggle
-│   └── addYear.ts                 # Year setting utility
-├── types/                         # Type definitions
-│   └── CommentLookup.ts           # Comment style definitions
-├── LicenseTemplates/              # License template files
-│   ├── MIT.txt
-│   ├── Apache.txt
-│   ├── GPL.txt
-│   ├── BSD.txt
-│   ├── ISC.txt
-│   └── Mozilla.txt
-└── test/                         # Test files
-```
-
-## 🎨 Comment Formatting Examples
-
-### Line Comments (Python, Shell, etc.)
-```python
-# MIT License
-# 
-# Copyright (c) 2024 John Doe
-# 
-# Permission is hereby granted...
-```
-
-### Block Comments (JavaScript, Java, C++, etc.)
-```javascript
-/*
- * MIT License
- * 
- * Copyright (c) 2024 John Doe
- * 
- * Permission is hereby granted, free of charge...
- */
-```
-
 ## 🔧 Development
 
 ### Prerequisites
@@ -364,14 +174,6 @@ npm run test
 
 ```bash
 npm run package
-```
-
-### Advanced Development Setup
-
-```bash
-npm run compile    # Compile TypeScript
-npm run watch      # Watch for changes
-F5                 # Launch Extension Development Host
 ```
 
 ## 🤝 Contributing
