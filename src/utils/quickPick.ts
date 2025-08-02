@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { QuickPickItem } from "vscode";
 
 /***
  *  @param valuesToDisplay - Array of values to display in the quick pick
@@ -6,15 +7,17 @@ import * as vscode from "vscode";
  *  @param canPickMany - Whether multiple selections are allowed
  *  @return Promise that resolves to the selected value or undefined if cancelled
  */
-export const displayQuickPick = (
-	valuesToDisplay: string[],
+export const displayQuickPick = <T extends QuickPickItem>(
+	valuesToDisplay: T[],
 	placeHolder: string,
 	canPickMany: boolean,
-	ignoreFocusOut: boolean
-): Thenable<string | undefined> => {
+	ignoreFocusOut: boolean,
+	matchOnDescription: boolean = true
+): Thenable<T | undefined> => {
 	return vscode.window.showQuickPick(valuesToDisplay, {
 		placeHolder: placeHolder,
 		canPickMany: canPickMany,
 		ignoreFocusOut: ignoreFocusOut,
+		matchOnDescription: matchOnDescription,
 	});
 };

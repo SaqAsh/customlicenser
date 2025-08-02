@@ -3,6 +3,10 @@ import * as vscode from "vscode";
 import { displayQuickPick } from "../utils/quickPick";
 import { updatePreference } from "../utils/updatePreference";
 
+export type autoSaveOptions = {
+	label: string;
+};
+
 /**
  * Toggles the auto-add license on save functionality.
  * Shows confirmation dialog and updates workspace configuration.
@@ -27,8 +31,8 @@ export const configureAutoAddOnSave = async (): Promise<
 	boolean | undefined
 > => {
 	try {
-		const selection = await displayQuickPick(
-			["Enable", "Disable"],
+		const selection = await displayQuickPick<autoSaveOptions>(
+			[{ label: "Enable" }, { label: "Disable" }],
 			"Enable or Disable auto add license",
 			false,
 			true
@@ -36,7 +40,7 @@ export const configureAutoAddOnSave = async (): Promise<
 
 		if (!selection) return;
 
-		const preference = selection === "Enable";
+		const preference = selection?.label === "Enable";
 		await setAutoAddOnSavePreference(preference);
 
 		return preference;
