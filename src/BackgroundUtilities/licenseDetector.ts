@@ -69,7 +69,7 @@ export class LicenseDetector {
 			const hasLicense = checkIfLicenseExists(document);
 
 			const status: LicenseStatus = {
-				hasLicense,
+				hasLicense: hasLicense?.containsKeyword ?? false,
 				filePath: uri.fsPath,
 				lastChecked: new Date(),
 			};

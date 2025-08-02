@@ -27,7 +27,6 @@ export const addLicenseToCurrentFile = async (): Promise<boolean> => {
 			return false;
 		}
 
-		// Check if license already exists
 		if (checkIfLicenseExists(editor.document)) {
 			const overwrite = await vscode.window.showWarningMessage(
 				"A license may already exist in this file. Do you want to add another one?",
@@ -39,7 +38,6 @@ export const addLicenseToCurrentFile = async (): Promise<boolean> => {
 			}
 		}
 
-		// Step 1: Get comment type for current file
 		const commentType = await determineCommentType();
 		if (!commentType) {
 			vscode.window.showErrorMessage(
@@ -48,7 +46,6 @@ export const addLicenseToCurrentFile = async (): Promise<boolean> => {
 			return false;
 		}
 
-		// Create format function based on comment type
 		const formatComment = (text: string): string => {
 			if (commentType.type === "line") {
 				const lines = text.split("\n");
@@ -56,7 +53,6 @@ export const addLicenseToCurrentFile = async (): Promise<boolean> => {
 					.map((line) => `${commentType.prefix}${line}`)
 					.join("\n");
 			} else {
-				// commentType.type === "block" - format with proper line-by-line structure
 				const lines = text.split("\n");
 				const formattedLines = [
 					commentType.start,

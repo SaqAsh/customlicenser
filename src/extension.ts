@@ -1,33 +1,37 @@
 import * as vscode from "vscode";
-import { getYear } from "./Commands/addYear";
-import { toggleAutoAddOnSave } from "./Commands/toggleAutoAddOnSave";
-import { selectLicenseToAdd } from "./Commands/selectLicenseToAdd";
-import { addCustomLicense } from "./Commands/addCustomLicense";
-import { selectDefaultLicense } from "./Commands/selectDefaultLicense";
+
 import {
-	editCustomLicense,
-	createNewCustomLicense,
-} from "./Commands/editCustomLicense";
-import {
-	startLicenseDetection,
-	stopLicenseDetection,
-	getLicenseDetector,
-} from "./BackgroundUtilities/licenseDetector";
-import {
-	enableAutoAddOnSave,
 	disableAutoAddOnSave,
+	enableAutoAddOnSave,
 	isAutoAddOnSaveEnabled,
 } from "./BackgroundUtilities/autoAddOnSave";
 import { determineCommentType } from "./BackgroundUtilities/commentTypeManger";
+
 import {
-	readLicenseTemplate,
-	processLicenseTemplate,
-} from "./BackgroundUtilities/licenseReader";
+	getLicenseDetector,
+	startLicenseDetection,
+	stopLicenseDetection,
+} from "./BackgroundUtilities/licenseDetector";
 import {
-	insertLicenseIntoCurrentFile,
 	checkIfLicenseExists,
+	insertLicenseIntoCurrentFile,
 } from "./BackgroundUtilities/licenseInserter";
-import { getLicenseOptions } from "./Commands/selectLicenseToAdd";
+import {
+	processLicenseTemplate,
+	readLicenseTemplate,
+} from "./BackgroundUtilities/licenseReader";
+import { addCustomLicense } from "./Commands/addCustomLicense";
+import { getYear } from "./Commands/addYear";
+import {
+	createNewCustomLicense,
+	editCustomLicense,
+} from "./Commands/editCustomLicense";
+import { selectDefaultLicense } from "./Commands/selectDefaultLicense";
+import {
+	getLicenseOptions,
+	selectLicenseToAdd,
+} from "./Commands/selectLicenseToAdd";
+import { toggleAutoAddOnSave } from "./Commands/toggleAutoAddOnSave";
 
 // Main function to add any license to current file
 const addLicenseToFile = async (licenseType?: string): Promise<void> => {

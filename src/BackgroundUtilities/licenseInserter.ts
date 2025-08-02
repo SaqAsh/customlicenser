@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-
+import { TextDocument } from "vscode";
 /**
  * Inserts a formatted license into the current active file.
  *
@@ -52,23 +52,40 @@ export const insertLicenseIntoCurrentFile = async (
  * @param licenseKeywords - Optional array of keywords to search for (defaults to common license terms)
  * @returns True if license keywords are found, false otherwise
  */
-export const checkIfLicenseExists = (
-	document: vscode.TextDocument,
-	licenseKeywords: string[] = ["license", "copyright", "mit", "apache", "gpl"]
-): boolean => {
-	// Check first 20 lines for license keywords
-	const linesToCheck = Math.min(20, document.lineCount);
 
-	for (let i = 0; i < linesToCheck; i++) {
+export type LicenseExistenceResultType = {
+	containsKeyword: boolean;
+	keyword: string;
+	lineNumber: number;
+};
+
+export type LicenseKeywords =
+	| "license"
+	| "copyright"
+	| "mit"
+	| "apache"
+	| "gpl"
+	| "licensor";
+
+const licenseKeywords: Set<LicenseKeywords> = new Set([
+	"license",
+	"copyright",
+	"mit",
+	"apache",
+	"gpl",
+	"licensor",
+]);
+
+export const checkIfLicenseExists = (document: TextDocument) => {
+	for (let i = 0; i < Math.min(20, document.lineCount); i++) {
 		const line = document.lineAt(i).text.toLowerCase();
-
-		// Check if any license keyword exists in the line
-		if (licenseKeywords.some((keyword) => line.includes(keyword))) {
-			return true;
+		for (const keyword of licenseKeywords) {
+			if (line.includes(keyword)) {
+				return { containsKeyword: true, keyword, lineNumber: i };
+			}
 		}
 	}
-
-	return false;
+	return undefined;
 };
 
 /**
@@ -82,7 +99,7 @@ export const checkIfLicenseExists = (
 export const removeLicenseFromCurrentFile = async (): Promise<boolean> => {
 	try {
 		const editor = vscode.window.activeTextEditor;
-		if (!editor) {
+		if (editor === undefined) {
 			vscode.window.showErrorMessage(
 				"No active file to remove license from"
 			);
@@ -91,20 +108,15 @@ export const removeLicenseFromCurrentFile = async (): Promise<boolean> => {
 
 		const document = editor.document;
 
-		// Find license block (first comment block or first 20 lines with license keywords)
 		let endLine = 0;
-		const licenseKeywords = [
-			"license",
-			"copyright",
-			"mit",
-			"apache",
-			"gpl",
-		];
 
-		for (let i = 0; i < Math.min(20, document.lineCount); i++) {
+		// the line number is cooked because of the fact that 100 might not be the length of the number
+		for (let i = 0; i < Math.min(100, document.lineCount); i++) {
 			const line = document.lineAt(i).text.toLowerCase();
-			if (licenseKeywords.some((keyword) => line.includes(keyword))) {
-				endLine = i + 1;
+			for (const keyword in licenseKeywords) {
+				if (line.includes(keyword)) {
+					endLine = i + 1;
+				}
 			}
 		}
 
