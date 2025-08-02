@@ -1,14 +1,8 @@
 import * as vscode from "vscode";
+import { WorkspaceConfiguration } from "vscode";
 
-/**
- * Prompts user for year input and saves to workspace configuration.
- *
- * Used for license template variable substitution.
- *
- * @returns Promise resolving to the entered year string or undefined if cancelled
- */
-export const getYear = async (): Promise<string | undefined> => {
-	const year: string | undefined = await vscode.window.showInputBox({
+const getYearFromUser = async () => {
+	return vscode.window.showInputBox({
 		prompt: "Enter the year for the license",
 		placeHolder: `${new Date()}`,
 		value: new Date().getFullYear().toString(),
@@ -18,14 +12,28 @@ export const getYear = async (): Promise<string | undefined> => {
 				: null;
 		},
 	});
+};
+
+const handleYear = async (year: string, config: WorkspaceConfiguration) => {
+	return config.update(
+		"defaultYear",
+		year,
+		vscode.ConfigurationTarget.Workspace
+	);
+};
+
+/**
+ * Prompts user for year input and saves to workspace configuration.
+ * Used for license template variable substitution.
+ * @returns Promise resolving to the entered year string or undefined if cancelled
+ */
+export const getYear = async (): Promise<string | undefined> => {
+	const year: string | undefined = await getYearFromUser();
 
 	if (year !== undefined) {
-		const config: vscode.WorkspaceConfiguration =
-			vscode.workspace.getConfiguration("customlicenser");
-		await config.update(
-			"defaultYear",
+		await handleYear(
 			year,
-			vscode.ConfigurationTarget.Workspace
+			vscode.workspace.getConfiguration("customlicenser")
 		);
 	}
 
