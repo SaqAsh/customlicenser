@@ -10,17 +10,17 @@ import { fileTypeManger } from "./fileTypeManager";
  * @returns Promise resolving to comment configuration or undefined if language not supported
  */
 export const determineCommentType = async (): Promise<
-	CommentInfo | undefined
+    CommentInfo | undefined
 > => {
-	const res = await fileTypeManger();
-	if (res === undefined) {
-		return undefined;
-	}
-	const languageID = res.languageID;
+    const res = fileTypeManger();
+    if (res === undefined) {
+        return undefined;
+    }
+    const languageID = res.languageID;
 
-	if (languageID in CommentLookup) {
-		return CommentLookup[languageID as keyof typeof CommentLookup];
-	}
+    if (languageID in CommentLookup) {
+        return CommentLookup[languageID as keyof typeof CommentLookup];
+    }
 
-	return undefined;
+    return undefined;
 };
