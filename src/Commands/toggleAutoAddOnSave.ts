@@ -1,21 +1,7 @@
 import * as vscode from "vscode";
 
-/***
- *  @param valuesToDisplay - Array of values to display in the quick pick
- *  @param placeHolder - Placeholder text for the quick pick
- *  @param canPickMany - Whether multiple selections are allowed
- *  @return Promise that resolves to the selected value or undefined if cancelled
- */
-const displayQuickPick = (
-    valuesToDisplay: string[],
-    placeHolder: string,
-    canPickMany: boolean
-) => {
-    return vscode.window.showQuickPick(valuesToDisplay, {
-        placeHolder: placeHolder,
-        canPickMany: canPickMany,
-    });
-};
+import { displayQuickPick } from "../utils/quickPick";
+import { updatePreference } from "../utils/updatePreference";
 
 /**
  * Toggles the auto-add license on save functionality.
@@ -26,13 +12,8 @@ const displayQuickPick = (
 const setAutoAddOnSavePreference = async (
     userPreference: boolean
 ): Promise<void> => {
-    const vsCodeConfiguration =
-        vscode.workspace.getConfiguration("customlicenser");
-    return vsCodeConfiguration.update(
-        "autoAddOnSave",
-        userPreference,
-        vscode.ConfigurationTarget.Workspace
-    );
+    const configurationName = "autoAddOnSave";
+    updatePreference(userPreference, configurationName);
 };
 
 /**
