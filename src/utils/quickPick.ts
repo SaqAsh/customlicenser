@@ -7,12 +7,14 @@ import * as vscode from "vscode";
  *  @return Promise that resolves to the selected value or undefined if cancelled
  */
 export const displayQuickPick = (
-    valuesToDisplay: string[],
-    placeHolder: string,
-    canPickMany: boolean
+	valuesToDisplay: string[],
+	placeHolder: string,
+	canPickMany: boolean,
+	ignoreFocusOut: boolean
 ): Thenable<string | undefined> => {
-    return vscode.window.showQuickPick(valuesToDisplay, {
-        placeHolder: placeHolder,
-        canPickMany: canPickMany,
-    });
+	return vscode.window.showQuickPick(valuesToDisplay, {
+		placeHolder: placeHolder,
+		canPickMany: canPickMany,
+		ignoreFocusOut: ignoreFocusOut,
+	});
 };
