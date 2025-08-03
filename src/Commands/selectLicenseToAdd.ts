@@ -1,5 +1,8 @@
-import { getLicenseOptions, LicenseOption } from "../utils/getLicenseOptions";
-import { displayQuickPick } from "../utils/quickPick";
+import {
+    getLicenseOptions,
+    LicenseOption,
+} from "../utils/getLicenseOptions.ts";
+import { displayQuickPick } from "../utils/quickPick.ts";
 
 /**
  * Displays a quick pick dialog to select a license to add.

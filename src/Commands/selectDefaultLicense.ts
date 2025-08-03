@@ -1,9 +1,9 @@
-import { getCurrConfigVal } from "../utils/getCurrConfigVal";
-import { getLicenseOptions } from "../utils/getLicenseOptions";
-import error from "../utils/loggers/error";
-import info from "../utils/loggers/info";
-import { displayQuickPick } from "../utils/quickPick";
-import { updatePreference } from "../utils/updatePreference";
+import { getCurrConfigVal } from "../utils/getCurrConfigVal.ts";
+import { getLicenseOptions } from "../utils/getLicenseOptions.ts";
+import error from "../utils/loggers/error.ts";
+import info from "../utils/loggers/info.ts";
+import { displayQuickPick } from "../utils/quickPick.ts";
+import { updatePreference } from "../utils/updatePreference.ts";
 
 /**
  * Shows license selection dialog for setting workspace default.
@@ -12,33 +12,33 @@ import { updatePreference } from "../utils/updatePreference";
  * @returns Promise resolving to true if default was set, false if cancelled
  */
 export const selectDefaultLicense = async (): Promise<boolean> => {
-	try {
-		const selected = await displayQuickPick(
-			getLicenseOptions(),
-			"Select a default license",
-			false,
-			true,
-			true
-		);
+    try {
+        const selected = await displayQuickPick(
+            getLicenseOptions(),
+            "Select a default license",
+            false,
+            true,
+            true
+        );
 
-		if (selected === undefined) {
-			info(`Failed to set default license: No selection made`);
-			return false;
-		}
+        if (selected === undefined) {
+            info(`Failed to set default license: No selection made`);
+            return false;
+        }
 
-		await updatePreference(selected.type, "defaultLicense");
+        await updatePreference(selected.type, "defaultLicense");
 
-		info(`Default license set to: ${selected.label}`);
+        info(`Default license set to: ${selected.label}`);
 
-		return true;
-	} catch (err) {
-		if (err instanceof Error) {
-			error("Failed to set default license: ${err.message}", err);
-		} else {
-			error(`Failed to set default license: Unknown error`);
-		}
-		return false;
-	}
+        return true;
+    } catch (err) {
+        if (err instanceof Error) {
+            error("Failed to set default license: ${err.message}", err);
+        } else {
+            error(`Failed to set default license: Unknown error`);
+        }
+        return false;
+    }
 };
 
 /**
@@ -46,5 +46,5 @@ export const selectDefaultLicense = async (): Promise<boolean> => {
  * @returns The default license type string or undefined if not set
  */
 export const getDefaultLicense = (): string | undefined => {
-	return getCurrConfigVal("defaultLicense");
+    return getCurrConfigVal("defaultLicense");
 };

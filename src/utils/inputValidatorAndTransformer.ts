@@ -3,9 +3,9 @@
  * @returns
  */
 
-const validateInput: (value: string) => string = (value) => {
-	if (!value || value.trim().length === 0) {
-		return "License content cannot be empty";
-	}
-	return "";
+export const validateInput: (value: string) => string = (value) => {
+    if (!value || value.trim().length === 0) {
+        return "License content cannot be empty";
+    }
+    return "";
 };

@@ -1,5 +1,5 @@
-import { displayInputBox } from "../utils/inputBox";
-import { updatePreference } from "../utils/updatePreference";
+import { displayInputBox } from "../utils/inputBox.ts";
+import { updatePreference } from "../utils/updatePreference.ts";
 
 const getYearFromUser = async () => {
     return displayInputBox({
