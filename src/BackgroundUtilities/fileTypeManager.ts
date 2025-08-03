@@ -11,9 +11,7 @@ export type FileTypeMangerReturnType = {
 
 /**
  * Gets information about the current active file.
- *
  * Extracts language ID and file path from the currently active editor.
- *
  * @returns File type information object or undefined if no active editor
  */
 export const fileTypeManger = (): FileTypeMangerReturnType | undefined => {

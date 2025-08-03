@@ -21,7 +21,7 @@ import {
 	readLicenseTemplate,
 } from "./BackgroundUtilities/licenseReader";
 import { addCustomLicense } from "./Commands/addCustomLicense";
-import { getYear } from "./Commands/addYear";
+import { setYear } from "./Commands/addYear";
 import {
 	createNewCustomLicense,
 	editCustomLicense,
@@ -31,7 +31,7 @@ import {
 	getLicenseOptions,
 	selectLicenseToAdd,
 } from "./Commands/selectLicenseToAdd";
-import { toggleAutoAddOnSave } from "./Commands/toggleAutoAddOnSave";
+import { configureAutoAddOnSave } from "./Commands/toggleAutoAddOnSave";
 
 // Main function to add any license to current file
 const addLicenseToFile = async (licenseType?: string): Promise<void> => {
@@ -137,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 		{
 			command: "customlicenser.toggleAutoSave",
 			callback: async () => {
-				const isEnabled = await toggleAutoAddOnSave();
+				const isEnabled = await configureAutoAddOnSave();
 				const config: vscode.WorkspaceConfiguration =
 					vscode.workspace.getConfiguration("customlicenser");
 
@@ -177,7 +177,7 @@ export function activate(context: vscode.ExtensionContext) {
 		{
 			command: "customlicenser.addYear",
 			callback: async () => {
-				const year = await getYear();
+				const year = await setYear();
 				if (year !== undefined) {
 					vscode.window.showInformationMessage(
 						`Year has been saved to: ${year}`

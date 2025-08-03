@@ -17,6 +17,11 @@ export const readLicenseTemplate = async (
 	licenseOption: LicenseOption
 ): Promise<string | undefined> => {
 	try {
+		if (licenseOption.type === "SavedCustom") {
+			// For saved custom licenses, return the stored content directly
+			return licenseOption.customContent;
+		}
+
 		if (licenseOption.type === "Custom") {
 			// For custom licenses, prompt user for input
 			const customText = await vscode.window.showInputBox({

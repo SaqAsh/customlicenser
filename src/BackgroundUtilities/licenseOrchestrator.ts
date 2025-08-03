@@ -1,14 +1,14 @@
 import * as vscode from "vscode";
+import {
+	LicenseOption,
+	selectLicenseToAdd,
+} from "../Commands/selectLicenseToAdd";
 import { determineCommentType } from "./commentTypeManger";
 import {
-	selectLicenseToAdd,
-	LicenseOption,
-} from "../Commands/selectLicenseToAdd";
-import { readLicenseTemplate, processLicenseTemplate } from "./licenseReader";
-import {
-	insertLicenseIntoCurrentFile,
 	checkIfLicenseExists,
+	insertLicenseIntoCurrentFile,
 } from "./licenseInserter";
+import { processLicenseTemplate, readLicenseTemplate } from "./licenseReader";
 
 /**
  * Main orchestrator for adding licenses to the current file.
