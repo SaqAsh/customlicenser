@@ -6,15 +6,15 @@ import * as vscode from "vscode";
  * @param configurationName - The name of the configuration setting to update.
  * @returns A promise that resolves when the update is complete.
  */
-export const updatePreference = async (
-    userPreference: string | boolean,
-    configurationName: string
+export const updatePreference = async <T>(
+	userPreference: T,
+	configurationName: string
 ): Promise<void> => {
-    const vsCodeConfiguration =
-        vscode.workspace.getConfiguration("customlicenser");
-    return vsCodeConfiguration.update(
-        configurationName,
-        userPreference,
-        vscode.ConfigurationTarget.Global
-    );
+	const vsCodeConfiguration =
+		vscode.workspace.getConfiguration("customlicenser");
+	return vsCodeConfiguration.update(
+		configurationName,
+		userPreference,
+		vscode.ConfigurationTarget.Global
+	);
 };

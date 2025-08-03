@@ -1,4 +1,9 @@
 import * as vscode from "vscode";
+import error from "../utils/loggers/error";
+import info from "../utils/loggers/info";
+import { displayQuickPick } from "../utils/quickPick";
+import { updatePreference } from "../utils/updatePreference";
+import warn from "../utils/loggers/warn";
 
 export interface CustomLicense {
 	name: string;
@@ -21,12 +26,11 @@ export const editCustomLicense = async (): Promise<boolean> => {
 			config.get<CustomLicense[]>("customLicenses") || [];
 
 		if (customLicenses.length === 0) {
-			const create = await vscode.window.showInformationMessage(
+			const create = await info(
 				"No custom licenses found. Would you like to create one?",
-				"Yes",
-				"No"
+				[{ title: "Yes" }, { title: "No" }]
 			);
-			if (create === "Yes") {
+			if (create?.title === "Yes") {
 				return await createNewCustomLicense();
 			}
 			return false;
@@ -39,16 +43,17 @@ export const editCustomLicense = async (): Promise<boolean> => {
 			license: license,
 		}));
 
-		const selected = await vscode.window.showQuickPick(licenseOptions, {
-			placeHolder: "Select a custom license to edit",
-			ignoreFocusOut: true,
-		});
+		const selected = await displayQuickPick(
+			licenseOptions,
+			"Select a custom license to edit",
+			false,
+			true
+		);
 
 		if (!selected) {
 			return false; // User cancelled
 		}
 
-		// Edit the selected license
 		const newContent = await vscode.window.showInputBox({
 			prompt: `Edit custom license: ${selected.license.name}`,
 			value: selected.license.content,
@@ -72,21 +77,11 @@ export const editCustomLicense = async (): Promise<boolean> => {
 				: license
 		);
 
-		// Save back to configuration
-		await config.update(
-			"customLicenses",
-			updatedLicenses,
-			vscode.ConfigurationTarget.Workspace
-		);
-
-		vscode.window.showInformationMessage(
-			`Custom license "${selected.license.name}" updated successfully!`
-		);
+		await updatePreference(updatedLicenses, "customLicenses");
+		info(`Custom license "${selected.license.name}" updated successfully!`);
 		return true;
-	} catch (error) {
-		vscode.window.showErrorMessage(
-			`Failed to edit custom license: ${error}`
-		);
+	} catch (err) {
+		error(`Failed to edit custom license: ${err}`);
 		return false;
 	}
 };
@@ -100,7 +95,6 @@ export const editCustomLicense = async (): Promise<boolean> => {
  */
 export const createNewCustomLicense = async (): Promise<boolean> => {
 	try {
-		// Get license name
 		const name = await vscode.window.showInputBox({
 			prompt: "Enter a name for your custom license",
 			placeHolder: "My Custom License",
@@ -113,8 +107,9 @@ export const createNewCustomLicense = async (): Promise<boolean> => {
 			},
 		});
 
-		if (!name) {
-			return false; // User cancelled
+		if (name === undefined) {
+			warn("License creation cancelled.");
+			return false;
 		}
 
 		// Get license content
@@ -130,37 +125,29 @@ export const createNewCustomLicense = async (): Promise<boolean> => {
 			},
 		});
 
-		if (!content) {
-			return false; // User cancelled
+		if (content === undefined) {
+			warn("License creation cancelled.");
+			return false;
 		}
 
-		// Create new custom license
 		const newLicense: CustomLicense = {
 			name: name.trim(),
 			content: content.trim(),
-			id: Date.now().toString(), // Simple ID generation
+			id: Date.now().toString(),
 		};
 
 		// Add to existing custom licenses
 		const config = vscode.workspace.getConfiguration("customlicenser");
 		const existingLicenses =
 			config.get<CustomLicense[]>("customLicenses") || [];
+
 		const updatedLicenses = [...existingLicenses, newLicense];
 
-		await config.update(
-			"customLicenses",
-			updatedLicenses,
-			vscode.ConfigurationTarget.Workspace
-		);
-
-		vscode.window.showInformationMessage(
-			`Custom license "${name}" created successfully!`
-		);
+		await updatePreference(updatedLicenses, "customLicenses");
+		info(`Custom license "${name}" created successfully!`);
 		return true;
-	} catch (error) {
-		vscode.window.showErrorMessage(
-			`Failed to create custom license: ${error}`
-		);
+	} catch (err) {
+		error(`Failed to create custom license: ${err}`);
 		return false;
 	}
 };

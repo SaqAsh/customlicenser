@@ -14,6 +14,7 @@ import {
 import error from "../utils/loggers/error";
 import info from "../utils/loggers/info";
 import warn from "../utils/loggers/warn";
+import { updatePreference } from "../utils/updatePreference";
 
 export interface CustomLicense {
 	name: string;
@@ -173,11 +174,7 @@ const saveCustomLicenseToConfig = async (
 
 		const updatedLicenses = [...existingLicenses, newLicense];
 
-		await config.update(
-			"customLicenses",
-			updatedLicenses,
-			vscode.ConfigurationTarget.Workspace
-		);
+		await updatePreference(updatedLicenses, "customLicenses");
 
 		return true;
 	} catch (err) {
