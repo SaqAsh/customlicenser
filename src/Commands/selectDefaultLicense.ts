@@ -1,9 +1,9 @@
 import { getCurrConfigVal } from "../utils/getCurrConfigVal";
+import { getLicenseOptions } from "../utils/getLicenseOptions";
 import error from "../utils/loggers/error";
 import info from "../utils/loggers/info";
 import { displayQuickPick } from "../utils/quickPick";
 import { updatePreference } from "../utils/updatePreference";
-import { getLicenseOptions } from "./selectLicenseToAdd";
 
 /**
  * Shows license selection dialog for setting workspace default.
