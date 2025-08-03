@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import error from "../utils/loggers/error";
-import info from "../utils/loggers/info";
+import error from "../utils/loggers/error.ts";
+import info from "../utils/loggers/info.ts";
 
 /**
  * Inserts a formatted license at the top of the current file and saves it.

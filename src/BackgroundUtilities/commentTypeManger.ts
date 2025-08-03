@@ -1,5 +1,5 @@
-import { CommentLookup, CommentInfo } from "../types/CommentLookup";
-import { fileTypeManger } from "./fileTypeManager";
+import { CommentLookup, CommentInfo } from "../types/CommentLookup.ts";
+import { fileTypeManger } from "./fileTypeManager.ts";
 
 /**
  * Determines the appropriate comment style for the current file.
@@ -10,17 +10,17 @@ import { fileTypeManger } from "./fileTypeManager";
  * @returns Promise resolving to comment configuration or undefined if language not supported
  */
 export const determineCommentType = async (): Promise<
-    CommentInfo | undefined
+	CommentInfo | undefined
 > => {
-    const res = fileTypeManger();
-    if (res === undefined) {
-        return undefined;
-    }
-    const languageID = res.languageID;
+	const res = fileTypeManger();
+	if (res === undefined) {
+		return undefined;
+	}
+	const languageID = res.languageID;
 
-    if (languageID in CommentLookup) {
-        return CommentLookup[languageID as keyof typeof CommentLookup];
-    }
+	if (languageID in CommentLookup) {
+		return CommentLookup[languageID as keyof typeof CommentLookup];
+	}
 
-    return undefined;
+	return undefined;
 };

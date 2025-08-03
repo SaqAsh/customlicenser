@@ -1,12 +1,19 @@
-import Fuse from "fuse.js";
 import * as vscode from "vscode";
 
-import { licensePhrases } from "../constants/license-phrases.js";
+import { licensePhrases } from "../constants/license-phrases.ts";
 
-const fuse = new Fuse(licensePhrases, {
-    includeScore: true,
-    threshold: 0.4,
-});
+let fuse: any = null;
+
+const initializeFuse = async () => {
+	if (!fuse) {
+		const Fuse = (await import("fuse.js")).default;
+		fuse = new Fuse(licensePhrases, {
+			includeScore: true,
+			threshold: 0.4,
+		});
+	}
+	return fuse;
+};
 
 /**
  * Checks if a line starts with a comment pattern.
@@ -14,9 +21,9 @@ const fuse = new Fuse(licensePhrases, {
  * @returns True if the line starts with //, /*, or /**; false otherwise
  */
 const isCommentStart = (line: string): boolean => {
-    return (
-        line.startsWith("/*") || line.startsWith("/**") || line.startsWith("//")
-    );
+	return (
+		line.startsWith("/*") || line.startsWith("/**") || line.startsWith("//")
+	);
 };
 
 /**
@@ -26,19 +33,19 @@ const isCommentStart = (line: string): boolean => {
  * @returns True if any of the first 10 non-empty lines start with comment patterns; false otherwise
  */
 const hasInitialCommentBlock = (document: vscode.TextDocument): boolean => {
-    let count = 0;
-    const bound = Math.min(10, document.lineCount);
+	let count = 0;
+	const bound = Math.min(10, document.lineCount);
 
-    for (let i = 0; i < bound; i++) {
-        const line = document.lineAt(i).text.trim();
-        if (line === "") continue;
-        count++;
-        if (isCommentStart(line)) {
-            return true;
-        }
-        if (count >= 10) break;
-    }
-    return false;
+	for (let i = 0; i < bound; i++) {
+		const line = document.lineAt(i).text.trim();
+		if (line === "") continue;
+		count++;
+		if (isCommentStart(line)) {
+			return true;
+		}
+		if (count >= 10) break;
+	}
+	return false;
 };
 
 /**
@@ -47,37 +54,38 @@ const hasInitialCommentBlock = (document: vscode.TextDocument): boolean => {
  * @param document - The VS Code text document to analyze for license content
  * @returns License detection result object with match details, or undefined if no license found
  */
-export const checkIfLicenseExists = (document: vscode.TextDocument) => {
-    if (!hasInitialCommentBlock(document)) {
-        return undefined;
-    }
+export const checkIfLicenseExists = async (document: vscode.TextDocument) => {
+	if (!hasInitialCommentBlock(document)) {
+		return undefined;
+	}
 
-    const buffer: string[] = [];
-    const bound = Math.min(100, document.lineCount);
+	const buffer: string[] = [];
+	const bound = Math.min(100, document.lineCount);
 
-    for (let i = 0; i < bound; i++) {
-        const line = document.lineAt(i).text.trim();
-        if (isCommentStart(line)) {
-            buffer.push(line);
-        } else if (line === "") {
-            continue;
-        } else {
-            break;
-        }
-    }
+	for (let i = 0; i < bound; i++) {
+		const line = document.lineAt(i).text.trim();
+		if (isCommentStart(line)) {
+			buffer.push(line);
+		} else if (line === "") {
+			continue;
+		} else {
+			break;
+		}
+	}
 
-    const fullCommentBlock = buffer.join(" ").toLowerCase();
-    const results = fuse.search(fullCommentBlock);
+	const fullCommentBlock = buffer.join(" ").toLowerCase();
+	const fuseInstance = await initializeFuse();
+	const results = fuseInstance.search(fullCommentBlock);
 
-    if (results.length > 0) {
-        const { item, score } = results[0];
-        return {
-            containsKeyword: true,
-            matchedPhrase: item,
-            score,
-            lineNumber: 0,
-        };
-    }
+	if (results.length > 0) {
+		const { item, score } = results[0];
+		return {
+			containsKeyword: true,
+			matchedPhrase: item,
+			score,
+			lineNumber: 0,
+		};
+	}
 
-    return undefined;
+	return undefined;
 };

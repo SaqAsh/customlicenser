@@ -1,7 +1,7 @@
-import error from "../utils/loggers/error";
-import info from "../utils/loggers/info";
-import { displayQuickPick } from "../utils/quickPick";
-import { updatePreference } from "../utils/updatePreference";
+import error from "../utils/loggers/error.ts";
+import info from "../utils/loggers/info.ts";
+import { displayQuickPick } from "../utils/quickPick.ts";
+import { updatePreference } from "../utils/updatePreference.ts";
 
 export type autoSaveOptions = {
 	label: string;

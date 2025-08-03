@@ -1,14 +1,13 @@
 import * as vscode from "vscode";
+import { selectLicenseToAdd } from "../Commands/selectLicenseToAdd.ts";
+import { LicenseOption } from "../utils/getLicenseOptions.ts";
+import { determineCommentType } from "./commentTypeManger.ts";
+import { insertLicenseIntoCurrentFile } from "./insert-license-into-current-file.ts";
+import { checkIfLicenseExists } from "../utils/check-if-license-exists.ts";
 import {
-	LicenseOption,
-	selectLicenseToAdd,
-} from "../Commands/selectLicenseToAdd";
-import { determineCommentType } from "./commentTypeManger";
-import {
-	checkIfLicenseExists,
-	insertLicenseIntoCurrentFile,
-} from "./licenseInserter";
-import { processLicenseTemplate, readLicenseTemplate } from "./licenseReader";
+	processLicenseTemplate,
+	readLicenseTemplate,
+} from "./licenseReader.ts";
 
 /**
  * Main orchestrator for adding licenses to the current file.
@@ -27,7 +26,7 @@ export const addLicenseToCurrentFile = async (): Promise<boolean> => {
 			return false;
 		}
 
-		if (checkIfLicenseExists(editor.document)) {
+		if (await checkIfLicenseExists(editor.document)) {
 			const overwrite = await vscode.window.showWarningMessage(
 				"A license may already exist in this file. Do you want to add another one?",
 				"Yes",

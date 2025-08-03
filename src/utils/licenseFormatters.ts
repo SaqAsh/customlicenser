@@ -5,31 +5,31 @@
  * @returns Commented line
  */
 const prependCommentString = (line: string, language: string): string => {
-    const trimmedLine = line.trim();
-    switch (language) {
-        case "javascript":
-        case "typescript":
-        case "java":
-        case "c":
-        case "cpp":
-        case "csharp":
-        case "go":
-        case "rust":
-        case "swift":
-        case "kotlin":
-        case "scala":
-        case "php":
-            return `// ${trimmedLine}`;
-        case "python":
-        case "ruby":
-        case "shell":
-            return `# ${trimmedLine}`;
-        case "html":
-        case "xml":
-            return `<!-- ${trimmedLine} -->`;
-        default:
-            return `// ${trimmedLine}`;
-    }
+	const trimmedLine = line.trim();
+	switch (language) {
+		case "javascript":
+		case "typescript":
+		case "java":
+		case "c":
+		case "cpp":
+		case "csharp":
+		case "go":
+		case "rust":
+		case "swift":
+		case "kotlin":
+		case "scala":
+		case "php":
+			return `// ${trimmedLine}`;
+		case "python":
+		case "ruby":
+		case "shell":
+			return `# ${trimmedLine}`;
+		case "html":
+		case "xml":
+			return `<!-- ${trimmedLine} -->`;
+		default:
+			return `// ${trimmedLine}`;
+	}
 };
 
 /**
@@ -41,46 +41,46 @@ const prependCommentString = (line: string, language: string): string => {
  * @returns Formatted block comment line
  */
 const blockPrepend = (
-    line: string,
-    language: string,
-    isStart: boolean,
-    isEnd: boolean
+	line: string,
+	language: string,
+	isStart: boolean,
+	isEnd: boolean
 ): string => {
-    const trimmedLine = line.trim();
-    switch (language) {
-        case "javascript":
-        case "typescript":
-        case "java":
-        case "c":
-        case "cpp":
-        case "csharp":
-        case "go":
-        case "rust":
-        case "swift":
-        case "kotlin":
-        case "scala":
-        case "php":
-            if (isStart && isEnd) return `/* ${trimmedLine} */`;
-            if (isStart) return `/* ${trimmedLine}`;
-            if (isEnd) return ` * ${trimmedLine} */`;
-            return ` * ${trimmedLine}`;
-        case "python":
-            if (isStart && isEnd) return `""" ${trimmedLine} """`;
-            if (isStart) return `""" ${trimmedLine}`;
-            if (isEnd) return `${trimmedLine} """`;
-            return `${trimmedLine}`;
-        case "html":
-        case "xml":
-            if (isStart && isEnd) return `<!-- ${trimmedLine} -->`;
-            if (isStart) return `<!-- ${trimmedLine}`;
-            if (isEnd) return `${trimmedLine} -->`;
-            return `${trimmedLine}`;
-        default:
-            if (isStart && isEnd) return `/* ${trimmedLine} */`;
-            if (isStart) return `/* ${trimmedLine}`;
-            if (isEnd) return ` * ${trimmedLine} */`;
-            return ` * ${trimmedLine}`;
-    }
+	const trimmedLine = line.trim();
+	switch (language) {
+		case "javascript":
+		case "typescript":
+		case "java":
+		case "c":
+		case "cpp":
+		case "csharp":
+		case "go":
+		case "rust":
+		case "swift":
+		case "kotlin":
+		case "scala":
+		case "php":
+			if (isStart && isEnd) return `/* ${trimmedLine} */`;
+			if (isStart) return `/* ${trimmedLine}`;
+			if (isEnd) return ` * ${trimmedLine} */`;
+			return ` * ${trimmedLine}`;
+		case "python":
+			if (isStart && isEnd) return `""" ${trimmedLine} """`;
+			if (isStart) return `""" ${trimmedLine}`;
+			if (isEnd) return `${trimmedLine} """`;
+			return `${trimmedLine}`;
+		case "html":
+		case "xml":
+			if (isStart && isEnd) return `<!-- ${trimmedLine} -->`;
+			if (isStart) return `<!-- ${trimmedLine}`;
+			if (isEnd) return `${trimmedLine} -->`;
+			return `${trimmedLine}`;
+		default:
+			if (isStart && isEnd) return `/* ${trimmedLine} */`;
+			if (isStart) return `/* ${trimmedLine}`;
+			if (isEnd) return ` * ${trimmedLine} */`;
+			return ` * ${trimmedLine}`;
+	}
 };
 
 /**
@@ -89,7 +89,7 @@ const blockPrepend = (
  * @returns Joined block body with prefixes
  */
 const blockBodyFormat = (lines: string[]): string => {
-    return lines.map((line) => ` * ${line.trim()}`).join("\n");
+	return lines.map((line) => ` * ${line.trim()}`).join("\n");
 };
 
 /**
@@ -99,13 +99,13 @@ const blockBodyFormat = (lines: string[]): string => {
  * @returns Line-commented license
  */
 export const lineFormatLicense = (
-    licenseTemplate: string,
-    language: string
+	licenseTemplate: string,
+	language: string
 ): string => {
-    return licenseTemplate
-        .split("\n")
-        .map((line) => prependCommentString(line, language))
-        .join("\n");
+	return licenseTemplate
+		.split("\n")
+		.map((line) => prependCommentString(line, language))
+		.join("\n");
 };
 
 /**
@@ -115,23 +115,23 @@ export const lineFormatLicense = (
  * @returns Block-commented license
  */
 export const blockFormatLicense = (
-    licenseTemplate: string,
-    language: string
+	licenseTemplate: string,
+	language: string
 ): string => {
-    const lines = licenseTemplate.split("\n");
+	const lines = licenseTemplate.split("\n");
 
-    if (lines.length === 0) return "";
+	if (lines.length === 0) return "";
 
-    if (lines.length === 1) return blockPrepend(lines[0], language, true, true);
+	if (lines.length === 1) return blockPrepend(lines[0], language, true, true);
 
-    const firstLine = blockPrepend(lines[0], language, true, false);
-    const body = blockBodyFormat(lines.slice(1, lines.length - 1));
-    const lastLine = blockPrepend(
-        lines[lines.length - 1],
-        language,
-        false,
-        true
-    );
+	const firstLine = blockPrepend(lines[0], language, true, false);
+	const body = blockBodyFormat(lines.slice(1, lines.length - 1));
+	const lastLine = blockPrepend(
+		lines[lines.length - 1],
+		language,
+		false,
+		true
+	);
 
-    return [firstLine, body, lastLine].join("\n");
+	return [firstLine, body, lastLine].join("\n");
 };

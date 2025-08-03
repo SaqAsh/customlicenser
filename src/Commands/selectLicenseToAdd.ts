@@ -1,6 +1,6 @@
 import {
-    getLicenseOptions,
-    LicenseOption,
+	getLicenseOptions,
+	LicenseOption,
 } from "../utils/getLicenseOptions.ts";
 import { displayQuickPick } from "../utils/quickPick.ts";
 
@@ -9,12 +9,12 @@ import { displayQuickPick } from "../utils/quickPick.ts";
  * @returns Promise resolving to selected license option or undefined if cancelled
  */
 export const selectLicenseToAdd = async (): Promise<
-    LicenseOption | undefined
+	LicenseOption | undefined
 > => {
-    return await displayQuickPick(
-        getLicenseOptions(),
-        "Select a license to add to your file",
-        true,
-        true
-    );
+	return await displayQuickPick(
+		getLicenseOptions(),
+		"Select a license to add to your file",
+		false,
+		true
+	);
 };

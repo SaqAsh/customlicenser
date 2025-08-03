@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 
-import { checkIfLicenseExists } from "../../BackgroundUtilities/licenseInserter";
-import { applyLicenseToCurrentFile } from "../../utils/applyLicenseToCurrentFile";
-import { displayInputBox } from "../../utils/inputBox";
-import error from "../../utils/loggers/error";
-import info from "../../utils/loggers/info";
-import warn from "../../utils/loggers/warn";
-import { updatePreference } from "../../utils/updatePreference";
+import { checkIfLicenseExists } from "../../utils/check-if-license-exists.ts";
+import { applyLicenseToCurrentFile } from "../../utils/applyLicenseToCurrentFile.ts";
+import { displayInputBox } from "../../utils/inputBox.ts";
+import error from "../../utils/loggers/error.ts";
+import info from "../../utils/loggers/info.ts";
+import warn from "../../utils/loggers/warn.ts";
+import { updatePreference } from "../../utils/updatePreference.ts";
 
 export interface CustomLicense {
 	name: string;
@@ -28,7 +28,7 @@ export const addCustomLicense = async (): Promise<boolean> => {
 			return false;
 		}
 
-		if (checkIfLicenseExists(editor.document) !== undefined) {
+		if ((await checkIfLicenseExists(editor.document)) !== undefined) {
 			const overwrite = await warn(
 				"A license may already exist in this file. Do you want to add another one?",
 				[{ title: "Yes" }, { title: "No" }]
@@ -91,7 +91,7 @@ Permission is hereby granted...`;
 						prompt: "Enter a name for this custom license",
 						placeHolder: "My Custom License",
 						ignoreFocusOut: true,
-						validateInput: (value) => {
+						validateInput: (value: string) => {
 							if (!value || value.trim().length === 0) {
 								return "License name cannot be empty";
 							}
