@@ -9,12 +9,12 @@ export type LicenseType =
     | "Mozilla"
     | "Custom";
 
-export interface LicenseOption {
+export type LicenseOption = {
     label: string;
     description: string;
     type: LicenseType;
     filename?: string;
-}
+};
 
 /**
  * Gets the list of available license options for selection.

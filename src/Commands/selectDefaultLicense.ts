@@ -1,6 +1,6 @@
-import * as vscode from "vscode";
-
 import { getCurrConfigVal } from "../utils/getCurrConfigVal";
+import error from "../utils/loggers/error";
+import info from "../utils/loggers/info";
 import { displayQuickPick } from "../utils/quickPick";
 import { updatePreference } from "../utils/updatePreference";
 import { getLicenseOptions } from "./selectLicenseToAdd";
@@ -21,20 +21,22 @@ export const selectDefaultLicense = async (): Promise<boolean> => {
             true
         );
 
-        if (selected === undefined) return false;
+        if (selected === undefined) {
+            info(`Failed to set default license: No selection made`);
+            return false;
+        }
 
         await updatePreference(selected.type, "defaultLicense");
 
-        vscode.window.showInformationMessage(
-            `Default license set to: ${selected.label}`
-        );
+        info(`Default license set to: ${selected.label}`);
 
         return true;
-    } catch (error) {
-        vscode.window.showErrorMessage(
-            `Failed to set default license: ${error}`
-        );
-
+    } catch (err) {
+        if (err instanceof Error) {
+            error("Failed to set default license: ${err.message}", err);
+        } else {
+            error(`Failed to set default license: Unknown error`);
+        }
         return false;
     }
 };

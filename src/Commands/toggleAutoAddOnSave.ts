@@ -1,10 +1,10 @@
-import * as vscode from "vscode";
-
+import error from "../utils/loggers/error";
+import info from "../utils/loggers/info";
 import { displayQuickPick } from "../utils/quickPick";
 import { updatePreference } from "../utils/updatePreference";
 
 export type autoSaveOptions = {
-	label: string;
+    label: string;
 };
 
 /**
@@ -14,42 +14,41 @@ export type autoSaveOptions = {
  * @returns Promise resolving to current state (true=enabled, false=disabled, undefined=error)
  */
 const setAutoAddOnSavePreference = async (
-	userPreference: boolean
+    userPreference: boolean
 ): Promise<void> => {
-	const configurationName = "autoAddOnSave";
-	updatePreference(userPreference, configurationName);
+    updatePreference(userPreference, "autoAddOnSave");
 };
 
 /**
  * Configures the auto-add license on save functionality.
  * Prompts the user to enable or disable the feature, updates settings accordingly,
  * and returns the new state.
- *
  * @returns Promise resolving to the selected state (true = enabled, false = disabled, undefined = cancelled or error)
  */
 export const configureAutoAddOnSave = async (): Promise<
-	boolean | undefined
+    boolean | undefined
 > => {
-	try {
-		const selection = await displayQuickPick<autoSaveOptions>(
-			[{ label: "Enable" }, { label: "Disable" }],
-			"Enable or Disable auto add license",
-			false,
-			true
-		);
+    try {
+        const selection = await displayQuickPick<autoSaveOptions>(
+            [{ label: "Enable" }, { label: "Disable" }],
+            "Enable or Disable auto add license",
+            false,
+            true
+        );
 
-		if (!selection) return;
+        if (selection === undefined) {
+            info("Auto-add on save configuration cancelled");
+            return;
+        }
 
-		const preference = selection?.label === "Enable";
-		await setAutoAddOnSavePreference(preference);
+        const preference = selection?.label === "Enable";
+        await setAutoAddOnSavePreference(preference);
 
-		return preference;
-	} catch (error) {
-		vscode.window.showErrorMessage(
-			`Error updating auto-add on save setting: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
-		);
-		return;
-	}
+        return preference;
+    } catch (err) {
+        if (err instanceof Error) {
+            error("Error updating auto-add on save setting: ", err);
+        }
+        return undefined;
+    }
 };
