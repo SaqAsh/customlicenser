@@ -1,196 +1,197 @@
 {
-	"name": "customlicenser",
-	"displayName": "CustomLicenser",
-	"description": "A flexible licensing tool that lets you choose from standard licenses or create your own custom terms—perfect for developers, creators, and teams who need control over how their work is shared and used.",
-	"version": "0.0.1",
-	"engines": {
-		"vscode": "^1.102.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [],
-	"main": "./dist/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "customlicenser.addMITLicense",
-				"title": "Add MIT License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addGPLLicense",
-				"title": "Add GPL v3 License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addApacheLicense",
-				"title": "Add Apache 2.0 License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addBSDLicense",
-				"title": "Add BSD 3-Clause License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addISCLicense",
-				"title": "Add ISC License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addMozillaLicense",
-				"title": "Add Mozilla Public License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addCustomLicense",
-				"title": "Add Custom License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.manageCustomLicenses",
-				"title": "Manage Custom Licenses",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.checkLicenseCoverage",
-				"title": "Check License Coverage",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.configureSettings",
-				"title": "Configure Settings",
-				"category": "CustomLicenser"
-			}
-		],
-		"configuration": {
-			"title": "CustomLicenser",
-			"properties": {
-				"customlicenser.defaultAuthor": {
-					"type": "string",
-					"default": "",
-					"description": "Default author name for license headers"
-				},
-				"customlicenser.defaultEmail": {
-					"type": "string",
-					"default": "",
-					"description": "Default email for license headers"
-				},
-				"customlicenser.autoInsertOnSave": {
-					"type": "boolean",
-					"default": false,
-					"description": "Automatically add license to new files on save"
-				},
-				"customlicenser.fileExtensions": {
-					"type": "array",
-					"default": [
-						".js",
-						".ts",
-						".py",
-						".java",
-						".cpp"
-					],
-					"description": "File types to auto-license"
-				},
-				"customlicenser.headerStyle": {
-					"type": "string",
-					"default": "block-comment",
-					"enum": [
-						"block-comment",
-						"line-comment",
-						"hash-comment"
-					],
-					"description": "Comment style for license headers"
-				},
-				"customlicenser.insertAtTop": {
-					"type": "boolean",
-					"default": true,
-					"description": "Insert license at file beginning"
-				},
-				"customlicenser.skipExistingLicense": {
-					"type": "boolean",
-					"default": true,
-					"description": "Skip files that already have licenses"
-				},
-				"customlicenser.customLicenses": {
-					"type": "array",
-					"default": [],
-					"description": "Custom license templates",
-					"items": {
-						"type": "object",
-						"properties": {
-							"id": {
-								"type": "string",
-								"description": "Unique identifier for the custom license"
-							},
-							"name": {
-								"type": "string",
-								"description": "Display name for the custom license"
-							},
-							"content": {
-								"type": "string",
-								"description": "License content text"
-							}
-						},
-						"required": [
-							"id",
-							"name",
-							"content"
-						]
-					}
-				},
-				"customlicenser.defaultLicense": {
-					"type": "string",
-					"default": "",
-					"description": "Default license type to use for auto-insertion"
-				},
-				"customlicenser.authorName": {
-					"type": "string",
-					"default": "Your Name",
-					"description": "Author name for license headers"
-				},
-				"customlicenser.authorEmail": {
-					"type": "string",
-					"default": "your.email@example.com",
-					"description": "Author email for license headers"
-				},
-				"customlicenser.toggleOnSave": {
-					"type": "boolean",
-					"default": false,
-					"description": "Enable auto-add license on save"
-				}
-			}
-		}
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run package",
-		"compile": "npm run check-types && npm run lint && node esbuild.js",
-		"watch": "npm-run-all -p watch:*",
-		"watch:esbuild": "node esbuild.js --watch",
-		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-		"package": "npm run check-types && npm run lint && node esbuild.js --production",
-		"compile-tests": "tsc -p . --outDir out",
-		"watch-tests": "tsc -p . -w --outDir out",
-		"pretest": "npm run compile-tests && npm run compile && npm run lint",
-		"check-types": "tsc --noEmit",
-		"lint": "eslint src",
-		"test": "vscode-test"
-	},
-	"devDependencies": {
-		"@types/mocha": "^10.0.10",
-		"@types/node": "20.x",
-		"@types/vscode": "^1.102.0",
-		"@typescript-eslint/eslint-plugin": "^8.31.1",
-		"@typescript-eslint/parser": "^8.31.1",
-		"@vscode/test-cli": "^0.0.11",
-		"@vscode/test-electron": "^2.5.2",
-		"esbuild": "^0.25.3",
-		"eslint": "^9.25.1",
-		"npm-run-all": "^4.1.5",
-		"typescript": "^5.8.3"
-	},
-	"dependencies": {
-		"fuse.js": "^7.1.0"
-	}
+    "name": "customlicenser",
+    "displayName": "CustomLicenser",
+    "description": "A flexible licensing tool that lets you choose from standard licenses or create your own custom terms—perfect for developers, creators, and teams who need control over how their work is shared and used.",
+    "version": "0.0.1",
+    "type": "module",
+    "engines": {
+        "vscode": "^1.102.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "customlicenser.addMITLicense",
+                "title": "Add MIT License",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.addGPLLicense",
+                "title": "Add GPL v3 License",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.addApacheLicense",
+                "title": "Add Apache 2.0 License",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.addBSDLicense",
+                "title": "Add BSD 3-Clause License",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.addISCLicense",
+                "title": "Add ISC License",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.addMozillaLicense",
+                "title": "Add Mozilla Public License",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.addCustomLicense",
+                "title": "Add Custom License",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.manageCustomLicenses",
+                "title": "Manage Custom Licenses",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.checkLicenseCoverage",
+                "title": "Check License Coverage",
+                "category": "CustomLicenser"
+            },
+            {
+                "command": "customlicenser.configureSettings",
+                "title": "Configure Settings",
+                "category": "CustomLicenser"
+            }
+        ],
+        "configuration": {
+            "title": "CustomLicenser",
+            "properties": {
+                "customlicenser.defaultAuthor": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Default author name for license headers"
+                },
+                "customlicenser.defaultEmail": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Default email for license headers"
+                },
+                "customlicenser.autoInsertOnSave": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Automatically add license to new files on save"
+                },
+                "customlicenser.fileExtensions": {
+                    "type": "array",
+                    "default": [
+                        ".js",
+                        ".ts",
+                        ".py",
+                        ".java",
+                        ".cpp"
+                    ],
+                    "description": "File types to auto-license"
+                },
+                "customlicenser.headerStyle": {
+                    "type": "string",
+                    "default": "block-comment",
+                    "enum": [
+                        "block-comment",
+                        "line-comment",
+                        "hash-comment"
+                    ],
+                    "description": "Comment style for license headers"
+                },
+                "customlicenser.insertAtTop": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Insert license at file beginning"
+                },
+                "customlicenser.skipExistingLicense": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Skip files that already have licenses"
+                },
+                "customlicenser.customLicenses": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Custom license templates",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier for the custom license"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Display name for the custom license"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "License content text"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "content"
+                        ]
+                    }
+                },
+                "customlicenser.defaultLicense": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Default license type to use for auto-insertion"
+                },
+                "customlicenser.authorName": {
+                    "type": "string",
+                    "default": "Your Name",
+                    "description": "Author name for license headers"
+                },
+                "customlicenser.authorEmail": {
+                    "type": "string",
+                    "default": "your.email@example.com",
+                    "description": "Author email for license headers"
+                },
+                "customlicenser.toggleOnSave": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable auto-add license on save"
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "npm run check-types && npm run lint && node esbuild.js",
+        "watch": "npm-run-all -p watch:*",
+        "watch:esbuild": "node esbuild.js --watch",
+        "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+        "package": "npm run check-types && npm run lint && node esbuild.js --production",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "check-types": "tsc --noEmit",
+        "lint": "eslint src",
+        "test": "vscode-test"
+    },
+    "devDependencies": {
+        "@types/mocha": "^10.0.10",
+        "@types/node": "20.x",
+        "@types/vscode": "^1.102.0",
+        "@typescript-eslint/eslint-plugin": "^8.31.1",
+        "@typescript-eslint/parser": "^8.31.1",
+        "@vscode/test-cli": "^0.0.11",
+        "@vscode/test-electron": "^2.5.2",
+        "esbuild": "^0.25.3",
+        "eslint": "^9.25.1",
+        "npm-run-all": "^4.1.5",
+        "typescript": "^5.8.3"
+    },
+    "dependencies": {
+        "fuse.js": "^7.1.0"
+    }
 }
