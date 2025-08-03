@@ -4,10 +4,8 @@ import * as vscode from "vscode";
  * @param configurationName - The name of the configuration setting to retrieve
  * @returns The license value as a string if found, undefined otherwise
  */
-export const getCurrConfigVal = (
-    configurationName: string
-): string | undefined => {
+export const getCurrConfigVal = <T>(configurationName: string) => {
     return vscode.workspace
         .getConfiguration("customlicenser", null)
-        .get<string>(configurationName);
+        .get<T>(configurationName);
 };

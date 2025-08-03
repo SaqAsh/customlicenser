@@ -1,17 +1,9 @@
 import * as vscode from "vscode";
 
-import { determineCommentType } from "../BackgroundUtilities/commentTypeManger";
-import {
-    checkIfLicenseExists,
-    insertLicenseIntoCurrentFile,
-} from "../BackgroundUtilities/licenseInserter";
+import { checkIfLicenseExists } from "../BackgroundUtilities/licenseInserter";
 
-import { fileTypeManger } from "../BackgroundUtilities/fileTypeManager";
+import { applyLicenseToCurrentFile } from "../utils/applyLicenseToCurrentFile";
 import { displayInputBox } from "../utils/inputBox";
-import {
-    blockFormatLicense,
-    lineFormatLicense,
-} from "../utils/licenseFormatters";
 import error from "../utils/loggers/error";
 import info from "../utils/loggers/info";
 import warn from "../utils/loggers/warn";
@@ -181,38 +173,6 @@ const saveCustomLicenseToConfig = async (
     } catch (err) {
         error(
             "Failed to save custom license to configuration",
-            err instanceof Error ? err : new Error(String(err))
-        );
-        return false;
-    }
-};
-
-/**
- * Applies license text to the current active file with proper formatting.
- * @param licenseText - Raw license text to apply
- * @returns Promise resolving to true if successful, false otherwise
- */
-const applyLicenseToCurrentFile = async (
-    licenseText: string
-): Promise<boolean> => {
-    try {
-        const commentType = await determineCommentType();
-        if (commentType === undefined) {
-            error("Unable to determine comment type for this file");
-            return false;
-        }
-
-        const languageId = fileTypeManger()?.languageID.toLowerCase() ?? "c";
-
-        const formattedLicense =
-            commentType.type === "line"
-                ? lineFormatLicense(licenseText, languageId)
-                : blockFormatLicense(licenseText, languageId);
-
-        return await insertLicenseIntoCurrentFile(formattedLicense);
-    } catch (err) {
-        error(
-            "Failed to apply license to current file",
             err instanceof Error ? err : new Error(String(err))
         );
         return false;

@@ -11,15 +11,13 @@ import {
     startLicenseDetection,
     stopLicenseDetection,
 } from "./BackgroundUtilities/licenseDetector";
-import {
-    checkIfLicenseExists,
-    insertLicenseIntoCurrentFile,
-} from "./BackgroundUtilities/licenseInserter";
+import { checkIfLicenseExists } from "./BackgroundUtilities/licenseInserter";
 import {
     processLicenseTemplate,
     readLicenseTemplate,
 } from "./BackgroundUtilities/licenseReader";
 import { addCustomLicense } from "./Commands/addCustomLicense";
+import { applyLicenseToCurrentFile } from "./utils/applyLicenseToCurrentFile";
 import { setYear } from "./Commands/addYear";
 import {
     createNewCustomLicense,
@@ -91,23 +89,14 @@ const addLicenseToFile = async (licenseType?: string): Promise<void> => {
             email: userEmail,
         });
 
-        let formattedLicense: string;
-        if (commentType.type === "line") {
-            const lines = processedTemplate.split("\n");
-            formattedLicense = lines
-                .map((line) => `${commentType.prefix}${line}`)
-                .join("\n");
-        } else {
-            const lines = processedTemplate.split("\n");
-            const formattedLines = [
-                commentType.start,
-                ...lines.map((line) => ` * ${line}`),
-                ` ${commentType.end}`,
-            ];
-            formattedLicense = formattedLines.join("\n");
-        }
+        const res = await applyLicenseToCurrentFile(processedTemplate);
 
-        await insertLicenseIntoCurrentFile(formattedLicense);
+        if (res === true) {
+            info("License successfully added to current file");
+        } else {
+            error("Failed to add license to current file");
+            return undefined;
+        }
     } catch (err) {
         error(`Failed to add license: ${err}`);
     }
