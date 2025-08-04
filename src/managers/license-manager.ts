@@ -22,11 +22,11 @@ export class LicenseManager implements ILicenseManager {
 		this.fileService = fileService;
 	}
 	start(): Promise<void> {
-		throw new Error("Method not implemented.");
+		return Promise.resolve();
 	}
 
 	stop(): Promise<void> {
-		throw new Error("Method not implemented.");
+		return Promise.resolve();
 	}
 
 	enableAutoSave(): Promise<void> {

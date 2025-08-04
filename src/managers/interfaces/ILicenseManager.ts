@@ -1,5 +1,4 @@
-import * as vscode from "vscode";
-import { LicenseTemplate } from "../../types";
+import { LicenseTemplate, LicenseType } from "../../types";
 
 export interface ILicenseManager {
 	start(): Promise<void>;
@@ -9,7 +8,7 @@ export interface ILicenseManager {
 	disableAutoSave(): Promise<void>;
 	isAutoSaveEnabled(): boolean;
 
-	addLicenseToFile(licenseType?: string): Promise<boolean>;
+	addLicenseToFile(licenseType?: LicenseType): Promise<boolean>;
 
 	getAvailableLicenses(): Promise<string[]>;
 	getDefaultLicense(): LicenseTemplate;
