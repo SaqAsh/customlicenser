@@ -1,25 +1,24 @@
+import { IConfigService } from "../services/interfaces";
 import { ITemplateManager } from "./interfaces/ITemplateManager";
+import { ITemplateService } from "../services/interfaces/ITemplateService";
+import { LicenseTemplate } from "../types";
 
 export class TemplateManager implements ITemplateManager {
-    async openTemplateEditor(templateName?: string): Promise<void> {}
+    private readonly configurationService: IConfigService;
+    private readonly templateService: ITemplateService;
+    private readonly allTemplates: LicenseTemplate[];
 
-    async handleTemplateCreation(): Promise<void> {}
+    constructor(
+        templateService: ITemplateService,
+        configurationService: IConfigService
+    ) {
+        (this.configurationService = configurationService),
+            (this.templateService = templateService);
+        this.allTemplates = templateService.allTemplates;
+    }
+    async openTemplateEditor(templateName: string): Promise<void> {}
+
+    async handleTemplateCreation(templateName: string): Promise<void> {}
 
     async handleTemplateEditing(templateName: string): Promise<void> {}
-
-    async showTemplateList(): Promise<string | undefined> {
-        return undefined;
-    }
-
-    async showCustomTemplateList(): Promise<string | undefined> {
-        return undefined;
-    }
-
-    validateTemplateName(name: string): boolean {
-        return true;
-    }
-
-    validateTemplateContent(content: string): boolean {
-        return true;
-    }
 }
