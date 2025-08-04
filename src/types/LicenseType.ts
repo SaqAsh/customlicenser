@@ -1,9 +1,1 @@
-export type LicenseType =
-    | "MIT"
-    | "Apache"
-    | "GPL"
-    | "BSD"
-    | "ISC"
-    | "Mozilla"
-    | "Custom"
-    | "SavedCustom";
+export type LicenseType = "mit" | "apache" | "gpl" | "bsd" | "isc" | "mozilla";
