@@ -1,5 +1,4 @@
-import error from "../utils/loggers/error.ts";
-import info from "../utils/loggers/info.ts";
+import { error, info } from "../utils/loggers";
 import { displayQuickPick } from "../utils/quickPick.ts";
 import { updatePreference } from "../utils/updatePreference.ts";
 

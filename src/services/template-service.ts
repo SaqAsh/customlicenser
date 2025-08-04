@@ -5,9 +5,9 @@ import * as vscode from "vscode";
 import { LicenseTemplatePaths } from "../constants/LicenseTemplatePaths";
 import { LicenseTemplate } from "../types/LicenseTemplate";
 import { LicenseType } from "../types/LicenseType";
-import error from "../utils/loggers/error";
-import { IConfigService } from "./interfaces/IConfigService";
-import { ITemplateService } from "./interfaces/ITemplateService";
+import { error } from "../utils/loggers";
+import { IConfigService } from "./interfaces";
+import { ITemplateService } from "./interfaces";
 export class TemplateService implements ITemplateService {
 	readonly currentTemplate: LicenseTemplate;
 	readonly defaultLicenseTemplate: LicenseTemplate;

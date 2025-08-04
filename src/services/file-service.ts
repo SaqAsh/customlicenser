@@ -5,8 +5,8 @@ import { skipExtensions } from "../constants/SkipExtensions";
 import { CommentLookup } from "../types/CommentLookup";
 import { CommentStyle } from "../types/CommentStyle";
 import { FileInfo } from "../types/FileInfo";
-import error from "../utils/loggers/error";
-import { IFileService } from "./interfaces/IFileService";
+import { error } from "../utils/loggers";
+import { IFileService } from "./interfaces";
 
 export class FileService implements IFileService {
 	private readonly editor = vscode.window.activeTextEditor;

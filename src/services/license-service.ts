@@ -1,4 +1,4 @@
-import { ILicenseService } from "./interfaces/ILicenseService";
+import { ILicenseService } from "./interfaces";
 
 export class LicenseService implements ILicenseService {
 	private language: string;
