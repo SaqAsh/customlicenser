@@ -1,5 +1,5 @@
-import { standardLicenses } from "../constants/StandardLicenses.ts";
-import { LicenseType } from "../types/LicenseType.ts";
+import { standardLicenses } from "../constants";
+import { LicenseType } from "../types";
 import { getCurrConfigVal } from "./getCurrConfigVal.ts";
 import { truncateContent } from "./truncateContent.ts";
 

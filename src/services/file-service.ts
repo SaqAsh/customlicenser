@@ -1,10 +1,7 @@
 import * as vscode from "vscode";
 
-import { licensePhrases } from "../constants/LicensePhrases";
-import { skipExtensions } from "../constants/SkipExtensions";
-import { CommentLookup } from "../types/CommentLookup";
-import { CommentStyle } from "../types/CommentStyle";
-import { FileInfo } from "../types/FileInfo";
+import { licensePhrases, skipExtensions } from "../constants";
+import { CommentLookup, CommentStyle, FileInfo } from "../types";
 import { error } from "../utils/loggers";
 import { IFileService } from "./interfaces";
 

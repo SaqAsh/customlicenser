@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { LicenseTemplate } from "../types/LicenseTemplate";
+import { LicenseTemplate } from "../types";
 import { IConfigService } from "./interfaces";
 
 export class ConfigService implements IConfigService {
