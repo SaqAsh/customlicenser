@@ -63,6 +63,10 @@ export class ConfigService implements IConfigService {
         await this.updateConfig("toggleOnSave", value);
     }
 
+    public async updateCustomTemplates(templates: LicenseTemplate[]): Promise<void> {
+        await this.updateConfig("customTemplates", templates);
+    }
+
     private async updateConfig<T>(key: string, value: T): Promise<void> {
         await this.config.update(key, value, true);
     }

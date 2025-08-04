@@ -11,4 +11,5 @@ export interface IConfigService {
     updateYear(value: string): Promise<void>;
     updateDefaultLicense(value: LicenseTemplate): Promise<void>;
     updateAutoAddEnabled(value: boolean): Promise<void>;
+    updateCustomTemplates(templates: LicenseTemplate[]): Promise<void>;
 }
