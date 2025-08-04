@@ -1,18 +1,30 @@
 import * as vscode from "vscode";
 
+import { licensePhrases } from "../constants/LicensePhrases";
 import { skipExtensions } from "../constants/SkipExtensions";
 import { CommentLookup } from "../types/CommentLookup";
 import { CommentStyle } from "../types/CommentStyle";
 import { FileInfo } from "../types/FileInfo";
+import error from "../utils/loggers/error";
 import { IFileService } from "./interfaces/IFileService";
 
 export class FileService implements IFileService {
 	private readonly editor = vscode.window.activeTextEditor;
 	private readonly document = this.editor?.document;
 	private readonly license: string;
+	private fuse: any = null;
 
 	constructor(license: string) {
 		this.license = license;
+		this.initializeFuse();
+	}
+
+	private async initializeFuse(): Promise<void> {
+		const Fuse = (await import("fuse.js")).default;
+		this.fuse = new Fuse(licensePhrases, {
+			includeScore: true,
+			threshold: 0.4,
+		});
 	}
 
 	public get language(): string {
@@ -57,7 +69,7 @@ export class FileService implements IFileService {
 				);
 			});
 
-			if (!edit) {
+			if (edit === false) {
 				return false;
 			}
 
@@ -65,6 +77,26 @@ export class FileService implements IFileService {
 			return true;
 		} catch (err) {
 			console.error("Error inserting license:", err);
+			return false;
+		}
+	}
+
+	public async hasLicense(): Promise<boolean> {
+		try {
+			if (!this.fuse) {
+				await this.initializeFuse();
+			}
+			const content = this.document?.getText();
+			const searchResults = this.fuse.search(content);
+			return searchResults.some(
+				(result: any) => result.score && result.score < 0.3
+			);
+		} catch (err) {
+			if (err instanceof Error) {
+				error("Error checking for license:", err);
+			} else {
+				error("Error checking for license:");
+			}
 			return false;
 		}
 	}
