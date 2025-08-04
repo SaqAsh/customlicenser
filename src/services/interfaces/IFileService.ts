@@ -1,20 +1,12 @@
-import * as vscode from "vscode";
-
-import { FileInfo } from "../../types/FileInfo";
 import { CommentStyle } from "../../types/CommentStyle";
+import { FileInfo } from "../../types/FileInfo";
 
 export interface IFileService {
-	getFileLanguage: string;
-	getFileExtension: string;
-	getFileInfo: FileInfo;
+    readonly language: string;
+    readonly extension: string;
+    readonly fileInfo: FileInfo;
+    readonly commentStyle: CommentStyle;
 
-	shouldProcessFile(filePath: string): boolean;
-
-	insertIntoFile(
-		document: vscode.TextDocument,
-		text: string
-	): Promise<boolean>;
-
-	formatLicenseForLanguage(template: string, language: string): string;
-	getCommentStyleForLanguage: CommentStyle;
+    shouldProcessFile(filePath: string): boolean;
+    insertIntoFile(): Promise<boolean>;
 }
