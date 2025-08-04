@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { LicenseTemplate } from "../types";
+import { LicenseTemplate, LicenseType } from "../types";
 import { IConfigService } from "./interfaces";
 
 export class ConfigService implements IConfigService {
@@ -17,6 +17,13 @@ export class ConfigService implements IConfigService {
 		return this.getCustomLicenserConfigValue<string>("authorName") ?? "";
 	}
 
+	public get allTemplates(): LicenseTemplate[] {
+		return (
+			this.getCustomLicenserConfigValue<LicenseTemplate[]>("templates") ??
+			[]
+		);
+	}
+
 	public getYear(): string {
 		return (
 			this.getCustomLicenserConfigValue<string>("year") ??
@@ -28,7 +35,7 @@ export class ConfigService implements IConfigService {
 		return (
 			this.getCustomLicenserConfigValue<LicenseTemplate>(
 				"defaultLicense"
-			) ?? { name: "", content: "" }
+			) ?? { name: "" as LicenseType, content: "" }
 		);
 	}
 

@@ -9,11 +9,9 @@ export class FileService implements IFileService {
 	private readonly editor = vscode.window.activeTextEditor;
 	private readonly document = this.editor?.document;
 	private readonly currentFilePath = this.document?.uri.fsPath;
-	private readonly license: string;
 	private fuse: any = null;
 
-	constructor(license: string) {
-		this.license = license;
+	constructor() {
 		this.initializeFuse();
 	}
 
@@ -54,17 +52,14 @@ export class FileService implements IFileService {
 		return ext ? !skipExtensions.has(ext) : true;
 	}
 
-	public async insertIntoFile(): Promise<boolean> {
+	public async insertIntoFile(license: string): Promise<boolean> {
 		try {
 			if (!this.editor || !this.document) {
 				return false;
 			}
 
 			const edit = await this.editor.edit((editBuilder) => {
-				editBuilder.insert(
-					new vscode.Position(0, 0),
-					this.license + "\n"
-				);
+				editBuilder.insert(new vscode.Position(0, 0), license + "\n");
 			});
 
 			if (edit === false) {

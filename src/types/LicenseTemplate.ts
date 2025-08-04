@@ -1,4 +1,6 @@
+import { LicenseType } from "./LicenseType";
+
 export type LicenseTemplate = {
-    name: string;
-    content: string;
+	name: LicenseType;
+	content: string;
 };

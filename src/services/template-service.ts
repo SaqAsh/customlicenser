@@ -5,12 +5,12 @@ import * as vscode from "vscode";
 import { LicenseTemplatePaths } from "../constants";
 import { LicenseTemplate, LicenseType } from "../types";
 import { error } from "../utils/loggers";
-import { IConfigService } from "./interfaces";
-import { ITemplateService } from "./interfaces";
+import { IConfigService, ITemplateService } from "./interfaces";
 export class TemplateService implements ITemplateService {
 	readonly currentTemplate: LicenseTemplate;
 	readonly defaultLicenseTemplate: LicenseTemplate;
 	readonly allCustomTemplates: LicenseTemplate[];
+	readonly allTemplates: LicenseTemplate[];
 
 	readonly configService: IConfigService;
 
@@ -22,6 +22,7 @@ export class TemplateService implements ITemplateService {
 		this.currentTemplate = currentTemplate;
 		this.defaultLicenseTemplate = this.configService.getDefaultLicense;
 		this.allCustomTemplates = this.configService.allCustomTemplates;
+		this.allTemplates = this.configService.allTemplates;
 	}
 
 	getTemplate(licenseType: LicenseType): Promise<string | undefined> {
@@ -50,7 +51,7 @@ export class TemplateService implements ITemplateService {
 	}
 
 	public async createCustomTemplate(
-		name: string,
+		name: LicenseType,
 		content: string
 	): Promise<void> {
 		const newTemplate: LicenseTemplate = {
@@ -74,7 +75,7 @@ export class TemplateService implements ITemplateService {
 	}
 
 	public async updateCustomTemplate(
-		name: string,
+		name: LicenseType,
 		content: string
 	): Promise<void> {
 		const currentTemplates: LicenseTemplate[] =
