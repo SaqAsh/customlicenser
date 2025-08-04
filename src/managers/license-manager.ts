@@ -15,7 +15,6 @@ export class LicenseManager implements ILicenseManager {
 	private readonly fileService: IFileService;
 	private autoSaveDisposable: vscode.Disposable | undefined;
 	private autoSaveDebounceTimer: NodeJS.Timeout | undefined;
-	private cachedAvailableLicenses: string[] | undefined;
 	private isProcessingAutoSave: boolean = false; // Flag to prevent infinite loops
 
 	constructor(
@@ -202,11 +201,6 @@ export class LicenseManager implements ILicenseManager {
 	}
 
 	async getAvailableLicenses(): Promise<string[]> {
-		// Return cached result if available
-		if (this.cachedAvailableLicenses) {
-			return this.cachedAvailableLicenses;
-		}
-
 		// Standard license types
 		const standardLicenses: LicenseType[] = [
 			"mit",
@@ -223,16 +217,7 @@ export class LicenseManager implements ILicenseManager {
 			(template) => template.name
 		);
 
-		this.cachedAvailableLicenses = [
-			...standardLicenses,
-			...customLicenseNames,
-		];
-		return this.cachedAvailableLicenses;
-	}
-
-	// Clear cache when custom templates change
-	clearLicenseCache(): void {
-		this.cachedAvailableLicenses = undefined;
+		return [...standardLicenses, ...customLicenseNames];
 	}
 
 	getDefaultLicense(): LicenseTemplate {

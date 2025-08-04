@@ -6,10 +6,6 @@ import { error } from "../loggers";
 import { IFileService } from "./interfaces";
 
 export class FileService implements IFileService {
-	// Cache for license detection to avoid repeated processing
-	private licenseDetectionCache: Map<string, boolean> = new Map();
-	private lastDocumentVersion: number | undefined;
-
 	constructor() {
 		// No async initialization needed
 	}
@@ -107,9 +103,6 @@ export class FileService implements IFileService {
 				return false;
 			}
 
-			// Clear license detection cache after inserting license
-			this.clearLicenseCache();
-
 			return saved;
 		} catch (err) {
 			console.error("FileService: Error inserting license:", err);
@@ -127,18 +120,6 @@ export class FileService implements IFileService {
 				return false;
 			}
 
-			// Check if document has changed since last detection
-			const currentVersion = this.currentDocument?.version;
-			const cacheKey = `${this.currentFilePath}-${currentVersion}`;
-
-			if (this.licenseDetectionCache.has(cacheKey)) {
-				const cachedResult = this.licenseDetectionCache.get(cacheKey)!;
-				console.log(
-					`FileService: Using cached license detection result: ${cachedResult}`
-				);
-				return cachedResult;
-			}
-
 			// Simple regex matching for license detection
 			const licenseRegex = new RegExp(licensePhrases.join("|"), "i");
 
@@ -147,9 +128,6 @@ export class FileService implements IFileService {
 			console.log(
 				`FileService: Simple regex license detection result: ${hasLicense}`
 			);
-
-			// Cache the result
-			this.licenseDetectionCache.set(cacheKey, hasLicense);
 
 			return hasLicense;
 		} catch (err) {
@@ -162,10 +140,5 @@ export class FileService implements IFileService {
 			);
 			return false;
 		}
-	}
-
-	// Clear cache when needed
-	private clearLicenseCache(): void {
-		this.licenseDetectionCache.clear();
 	}
 }

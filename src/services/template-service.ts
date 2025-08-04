@@ -15,10 +15,6 @@ export class TemplateService implements ITemplateService {
 
 	readonly configService: IConfigService;
 
-	// Cache for template content to avoid repeated file reads
-	private templateCache: Map<string, string> = new Map();
-	private templatePathCache: string | undefined;
-
 	constructor(
 		configService: IConfigService,
 		currentTemplate: LicenseTemplate
@@ -31,19 +27,12 @@ export class TemplateService implements ITemplateService {
 	}
 
 	async getTemplate(licenseType: LicenseType): Promise<string | undefined> {
-		// Check cache first
-		if (this.templateCache.has(licenseType)) {
-			return this.templateCache.get(licenseType);
-		}
-
 		// Check if it's a custom template first
 		const customTemplate = this.allCustomTemplates.find(
 			(template) => template.name === licenseType
 		);
 
 		if (customTemplate) {
-			// Cache the custom template
-			this.templateCache.set(licenseType, customTemplate.content);
 			return customTemplate.content;
 		}
 
@@ -54,22 +43,10 @@ export class TemplateService implements ITemplateService {
 			return undefined;
 		}
 
-		const content = await this.readTemplateFromFile(filePath);
-
-		// Cache the result
-		if (content) {
-			this.templateCache.set(licenseType, content);
-		}
-
-		return content;
+		return await this.readTemplateFromFile(filePath);
 	}
 
 	private async findTemplateDirectory(): Promise<string | undefined> {
-		// Use cached path if available
-		if (this.templatePathCache) {
-			return this.templatePathCache;
-		}
-
 		const possiblePaths = [
 			// Try extension path first (for production)
 			...(vscode.extensions.getExtension("customlicenser")?.extensionPath
@@ -96,10 +73,10 @@ export class TemplateService implements ITemplateService {
 		for (const possiblePath of possiblePaths) {
 			try {
 				await fs.access(possiblePath);
-				this.templatePathCache = possiblePath;
 				return possiblePath;
 			} catch {
-				// Continue to next path
+				// Path doesn't exist, try next one
+				continue;
 			}
 		}
 
@@ -162,7 +139,7 @@ export class TemplateService implements ITemplateService {
 		await this.configService.updateCustomTemplates(updatedTemplates);
 
 		// Clear template cache when templates are modified
-		this.templateCache.clear();
+		// this.templateCache.clear(); // This line was removed as per the edit hint
 	}
 
 	public async updateCustomTemplate(
@@ -189,7 +166,7 @@ export class TemplateService implements ITemplateService {
 		await this.configService.updateCustomTemplates(updatedTemplates);
 
 		// Clear template cache when templates are modified
-		this.templateCache.clear();
+		// this.templateCache.clear(); // This line was removed as per the edit hint
 	}
 
 	public async deleteCustomTemplate(name: string): Promise<void> {

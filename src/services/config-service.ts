@@ -4,21 +4,9 @@ import { IConfigService } from "./interfaces";
 
 export class ConfigService implements IConfigService {
 	private readonly configName = "customlicenser";
-	private cachedConfig: vscode.WorkspaceConfiguration | undefined;
 
 	private get config(): vscode.WorkspaceConfiguration {
-		// Cache the config to avoid repeated workspace calls
-		if (!this.cachedConfig) {
-			this.cachedConfig = vscode.workspace.getConfiguration(
-				this.configName
-			);
-		}
-		return this.cachedConfig;
-	}
-
-	// Clear cache when config changes
-	private clearCache(): void {
-		this.cachedConfig = undefined;
+		return vscode.workspace.getConfiguration(this.configName);
 	}
 
 	public getCustomLicenserConfigValue<T>(key: string): T | undefined {
@@ -91,6 +79,6 @@ export class ConfigService implements IConfigService {
 	private async updateConfig<T>(key: string, value: T): Promise<void> {
 		await this.config.update(key, value, true);
 		// Clear cache after update to ensure fresh data
-		this.clearCache();
+		// this.clearCache(); // Removed caching, so no need to clear
 	}
 }
