@@ -5,7 +5,7 @@ import {
     enableAutoAddOnSave,
     isAutoAddOnSaveEnabled,
 } from "./BackgroundUtilities/autoAddOnSave.ts";
-import { determineCommentType } from "./utils/loggers/comment-style-detector.ts";
+import { determineCommentType } from "./loggers/comment-style-detector.ts";
 import {
     getLicenseDetector,
     startLicenseDetection,
@@ -14,7 +14,7 @@ import {
 import {
     processLicenseTemplate,
     readLicenseTemplate,
-} from "./utils/loggers/license-inserter.ts";
+} from "./loggers/license-inserter.ts";
 import { checkIfLicenseExists } from "./utils/check-if-license-exists.ts";
 import { addCustomLicense } from "./commands/CommandsToRefactor/addCustomLicense.ts";
 import { setYear } from "./commands/addYear.ts";
@@ -28,9 +28,9 @@ import { selectLicenseToAdd } from "./commands/selectLicenseToAdd.ts";
 import { configureAutoAddOnSave } from "./commands/toggleAutoAddOnSave.ts";
 import { getLicenseOptions } from "./utils/getLicenseOptions.ts";
 import { displayInputBox } from "./utils/inputBox.ts";
-import error from "./utils/loggers/error.ts";
-import info from "./utils/loggers/info.ts";
-import warn from "./utils/loggers/warn.ts";
+import error from "./loggers/error.ts";
+import info from "./loggers/info.ts";
+import warn from "./loggers/warn.ts";
 
 const addLicenseToFile = async (licenseType?: string): Promise<void> => {
     try {

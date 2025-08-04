@@ -1,9 +1,9 @@
-import { error, info } from "../utils/loggers";
+import { error, info } from "../loggers/index.ts";
 import { displayQuickPick } from "../utils/quickPick.ts";
 import { updatePreference } from "../utils/updatePreference.ts";
 
 export type autoSaveOptions = {
-	label: string;
+    label: string;
 };
 
 /**
@@ -13,9 +13,9 @@ export type autoSaveOptions = {
  * @returns Promise resolving to current state (true=enabled, false=disabled, undefined=error)
  */
 const setAutoAddOnSavePreference = async (
-	userPreference: boolean
+    userPreference: boolean
 ): Promise<void> => {
-	updatePreference(userPreference, "autoAddOnSave");
+    updatePreference(userPreference, "autoAddOnSave");
 };
 
 /**
@@ -25,29 +25,29 @@ const setAutoAddOnSavePreference = async (
  * @returns Promise resolving to the selected state (true = enabled, false = disabled, undefined = cancelled or error)
  */
 export const configureAutoAddOnSave = async (): Promise<
-	boolean | undefined
+    boolean | undefined
 > => {
-	try {
-		const selection = await displayQuickPick<autoSaveOptions>(
-			[{ label: "Enable" }, { label: "Disable" }],
-			"Enable or Disable auto add license",
-			false,
-			true
-		);
+    try {
+        const selection = await displayQuickPick<autoSaveOptions>(
+            [{ label: "Enable" }, { label: "Disable" }],
+            "Enable or Disable auto add license",
+            false,
+            true
+        );
 
-		if (selection === undefined) {
-			info("Auto-add on save configuration cancelled");
-			return;
-		}
+        if (selection === undefined) {
+            info("Auto-add on save configuration cancelled");
+            return;
+        }
 
-		const preference = selection?.label === "Enable";
-		await setAutoAddOnSavePreference(preference);
+        const preference = selection?.label === "Enable";
+        await setAutoAddOnSavePreference(preference);
 
-		return preference;
-	} catch (err) {
-		if (err instanceof Error) {
-			error("Error updating auto-add on save setting: ", err);
-		}
-		return undefined;
-	}
+        return preference;
+    } catch (err) {
+        if (err instanceof Error) {
+            error("Error updating auto-add on save setting: ", err);
+        }
+        return undefined;
+    }
 };
