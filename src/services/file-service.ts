@@ -11,6 +11,7 @@ import { IFileService } from "./interfaces/IFileService";
 export class FileService implements IFileService {
 	private readonly editor = vscode.window.activeTextEditor;
 	private readonly document = this.editor?.document;
+	private readonly currentFilePath = this.document?.uri.fsPath;
 	private readonly license: string;
 	private fuse: any = null;
 
@@ -40,7 +41,7 @@ export class FileService implements IFileService {
 			fileName: this.document?.fileName,
 			fileExtension: this.extension,
 			languageID: this.language,
-			filePath: this.document?.uri.fsPath,
+			filePath: this.currentFilePath,
 			uri: this.document?.uri,
 		};
 	}
@@ -51,8 +52,8 @@ export class FileService implements IFileService {
 			: { type: "line" };
 	}
 
-	public shouldProcessFile(filePath: string): boolean {
-		const ext = filePath.split(".").pop();
+	public shouldProcessFile(): boolean {
+		const ext = this.currentFilePath?.split(".").pop();
 		return ext ? !skipExtensions.has(ext) : true;
 	}
 

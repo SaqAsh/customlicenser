@@ -7,7 +7,7 @@ export interface IFileService {
 	readonly fileInfo: FileInfo;
 	readonly commentStyle: CommentStyle;
 
-	shouldProcessFile(filePath: string): boolean;
+	shouldProcessFile(): boolean;
 	insertIntoFile(): Promise<boolean>;
 	hasLicense(): Promise<boolean>;
 }
