@@ -2,8 +2,8 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { LicenseOption } from "../utils/getLicenseOptions.ts";
-import { displayInputBox } from "../utils/inputBox.ts";
+import { LicenseOption } from "../getLicenseOptions.ts";
+import { displayInputBox } from "../inputBox.ts";
 
 /**
  * Reads and loads a license template from file or user input.
