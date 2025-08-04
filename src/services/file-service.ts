@@ -6,97 +6,166 @@ import { error } from "../loggers";
 import { IFileService } from "./interfaces";
 
 export class FileService implements IFileService {
-    private readonly editor = vscode.window.activeTextEditor;
-    private readonly document = this.editor?.document;
-    private readonly currentFilePath = this.document?.uri.fsPath;
-    private fuse: any = null;
+	// Cache for license detection to avoid repeated processing
+	private licenseDetectionCache: Map<string, boolean> = new Map();
+	private lastDocumentVersion: number | undefined;
 
-    constructor() {
-        this.initializeFuse();
-    }
+	constructor() {
+		// No async initialization needed
+	}
 
-    private async initializeFuse(): Promise<void> {
-        const Fuse = (await import("fuse.js")).default;
-        this.fuse = new Fuse(licensePhrases, {
-            includeScore: true,
-            threshold: 0.4,
-        });
-    }
+	// Get current active editor dynamically
+	private get currentEditor(): vscode.TextEditor | undefined {
+		return vscode.window.activeTextEditor;
+	}
 
-    public get language(): string {
-        return this.document?.languageId || "";
-    }
+	// Get current document dynamically
+	private get currentDocument(): vscode.TextDocument | undefined {
+		return this.currentEditor?.document;
+	}
 
-    public get extension(): string {
-        return this.document?.fileName.split(".").pop() || "";
-    }
+	// Get current file path dynamically
+	private get currentFilePath(): string | undefined {
+		return this.currentDocument?.uri.fsPath;
+	}
 
-    public get fileInfo(): FileInfo {
-        return {
-            fileName: this.document?.fileName,
-            fileExtension: this.extension,
-            languageID: this.language,
-            filePath: this.currentFilePath,
-            uri: this.document?.uri,
-        };
-    }
+	public get language(): string {
+		return this.currentDocument?.languageId || "";
+	}
 
-    public get commentStyle(): CommentStyle {
-        return this.language in CommentLookup
-            ? CommentLookup[this.language as keyof typeof CommentLookup]
-            : { type: "line" };
-    }
+	public get extension(): string {
+		return this.currentDocument?.fileName.split(".").pop() || "";
+	}
 
-    public shouldProcessFile(): boolean {
-        const ext = this.currentFilePath?.split(".").pop();
-        return ext ? !skipExtensions.has(ext) : true;
-    }
+	public get fileInfo(): FileInfo {
+		return {
+			fileName: this.currentDocument?.fileName,
+			fileExtension: this.extension,
+			languageID: this.language,
+			filePath: this.currentFilePath,
+			uri: this.currentDocument?.uri,
+		};
+	}
 
-    public async insertIntoFile(license: string): Promise<boolean> {
-        try {
-            if (!this.editor || !this.document) {
-                return false;
-            }
+	public get commentStyle(): CommentStyle {
+		return this.language in CommentLookup
+			? CommentLookup[this.language as keyof typeof CommentLookup]
+			: { type: "line" };
+	}
 
-            const edit = await this.editor.edit((editBuilder) => {
-                editBuilder.insert(new vscode.Position(0, 0), license + "\n");
-            });
+	public shouldProcessFile(): boolean {
+		// Don't process template editor documents (plaintext language)
+		if (this.language === "plaintext") {
+			return false;
+		}
 
-            if (edit === false) {
-                return false;
-            }
+		const ext = this.currentFilePath?.split(".").pop();
+		return ext ? !skipExtensions.has(ext) : true;
+	}
 
-            const saved = await this.document.save();
+	public async insertIntoFile(license: string): Promise<boolean> {
+		try {
+			console.log(
+				`FileService: Attempting to insert license, editor: ${!!this
+					.currentEditor}, document: ${!!this.currentDocument}`
+			);
 
-            if (!saved) {
-                error("Failed to save document after inserting license");
-                return false;
-            }
+			if (!this.currentEditor || !this.currentDocument) {
+				console.log("FileService: No editor or document available");
+				return false;
+			}
 
-            return saved;
-        } catch (err) {
-            console.error("Error inserting license:", err);
-            return false;
-        }
-    }
+			// Check if editor is still active and document is not closed
+			if (
+				!this.currentEditor.document ||
+				this.currentEditor.document.isClosed
+			) {
+				console.log("FileService: Document is closed or not available");
+				return false;
+			}
 
-    public async hasLicense(): Promise<boolean> {
-        try {
-            if (!this.fuse) {
-                await this.initializeFuse();
-            }
-            const content = this.document?.getText();
-            const searchResults = this.fuse.search(content);
-            return searchResults.some(
-                (result: any) => result.score && result.score < 0.3
-            );
-        } catch (err) {
-            if (err instanceof Error) {
-                error("Error checking for license:", err);
-            } else {
-                error("Error checking for license:");
-            }
-            return false;
-        }
-    }
+			console.log(
+				`FileService: Document language: ${this.currentEditor.document.languageId}, file: ${this.currentEditor.document.fileName}`
+			);
+
+			const edit = await this.currentEditor.edit((editBuilder) => {
+				editBuilder.insert(new vscode.Position(0, 0), license + "\n");
+			});
+
+			console.log(`FileService: Edit result: ${edit}`);
+
+			if (edit === false) {
+				console.log("FileService: Edit operation failed");
+				return false;
+			}
+
+			const saved = await this.currentDocument.save();
+			console.log(`FileService: Save result: ${saved}`);
+
+			if (!saved) {
+				error("Failed to save document after inserting license");
+				return false;
+			}
+
+			// Clear license detection cache after inserting license
+			this.clearLicenseCache();
+
+			return saved;
+		} catch (err) {
+			console.error("FileService: Error inserting license:", err);
+			return false;
+		}
+	}
+
+	public async hasLicense(): Promise<boolean> {
+		try {
+			const content = this.currentDocument?.getText();
+			if (!content) {
+				console.log(
+					"FileService: No content available for license detection"
+				);
+				return false;
+			}
+
+			// Check if document has changed since last detection
+			const currentVersion = this.currentDocument?.version;
+			const cacheKey = `${this.currentFilePath}-${currentVersion}`;
+
+			if (this.licenseDetectionCache.has(cacheKey)) {
+				const cachedResult = this.licenseDetectionCache.get(cacheKey)!;
+				console.log(
+					`FileService: Using cached license detection result: ${cachedResult}`
+				);
+				return cachedResult;
+			}
+
+			// Simple regex matching for license detection
+			const licenseRegex = new RegExp(licensePhrases.join("|"), "i");
+
+			const hasLicense = licenseRegex.test(content);
+
+			console.log(
+				`FileService: Simple regex license detection result: ${hasLicense}`
+			);
+
+			// Cache the result
+			this.licenseDetectionCache.set(cacheKey, hasLicense);
+
+			return hasLicense;
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : "Unknown error occurred";
+			console.error("FileService: Error in hasLicense:", err);
+			error(
+				`Error checking for license: ${errorMessage}`,
+				err instanceof Error ? err : undefined
+			);
+			return false;
+		}
+	}
+
+	// Clear cache when needed
+	private clearLicenseCache(): void {
+		this.licenseDetectionCache.clear();
+	}
 }

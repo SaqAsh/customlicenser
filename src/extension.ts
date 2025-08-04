@@ -1,321 +1,570 @@
 import * as vscode from "vscode";
+import { LicenseManager, TemplateManager } from "./managers";
+import { ConfigService, FileService, TemplateService } from "./services";
+import { LicenseTemplate } from "./types";
+import { error, info, warn } from "./loggers";
 
-import {
-    disableAutoAddOnSave,
-    enableAutoAddOnSave,
-    isAutoAddOnSaveEnabled,
-} from "./BackgroundUtilities/autoAddOnSave.ts";
-import { determineCommentType } from "./loggers/comment-style-detector.ts";
-import {
-    getLicenseDetector,
-    startLicenseDetection,
-    stopLicenseDetection,
-} from "./BackgroundUtilities/licenseDetector.ts";
-import {
-    processLicenseTemplate,
-    readLicenseTemplate,
-} from "./loggers/license-inserter.ts";
-import { checkIfLicenseExists } from "./utils/check-if-license-exists.ts";
-import { addCustomLicense } from "./commands/CommandsToRefactor/addCustomLicense.ts";
-import { setYear } from "./commands/addYear.ts";
-import { applyLicenseToCurrentFile } from "./utils/applyLicenseToCurrentFile.ts";
-import {
-    createNewCustomLicense,
-    editCustomLicense,
-} from "./commands/CommandsToRefactor/editCustomLicense.ts";
-import { selectDefaultLicense } from "./commands/selectDefaultLicense.ts";
-import { selectLicenseToAdd } from "./commands/selectLicenseToAdd.ts";
-import { configureAutoAddOnSave } from "./commands/toggleAutoAddOnSave.ts";
-import { getLicenseOptions } from "./utils/getLicenseOptions.ts";
-import { displayInputBox } from "./utils/inputBox.ts";
-import error from "./loggers/error.ts";
-import info from "./loggers/info.ts";
-import warn from "./loggers/warn.ts";
-
-const addLicenseToFile = async (licenseType?: string): Promise<void> => {
-    try {
-        const editor = vscode.window.activeTextEditor;
-        if (editor === undefined) {
-            error("No active file to add license to");
-            return;
-        }
-
-        if (await checkIfLicenseExists(editor.document)) {
-            const overwrite = await warn(
-                "A license may already exist in this file. Do you want to add another one?",
-                [{ title: "Yes" }, { title: "No" }]
-            );
-            if (overwrite?.title !== "Yes") {
-                return;
-            }
-        }
-
-        // Get license option
-        let licenseOption;
-        if (licenseType) {
-            const options = getLicenseOptions();
-            licenseOption = options.find(
-                (opt: any) => opt.type === licenseType
-            );
-        } else {
-            licenseOption = await selectLicenseToAdd();
-        }
-
-        if (!licenseOption) {
-            return;
-        }
-
-        // Get comment type
-        const commentType = await determineCommentType();
-        if (commentType === undefined) {
-            error("Unable to determine comment type for this file");
-            return;
-        }
-
-        // Read and process license
-        const licenseTemplate = await readLicenseTemplate(licenseOption);
-        if (licenseTemplate === undefined) {
-            error("Failed to read license template");
-            return;
-        }
-
-        const config = vscode.workspace.getConfiguration("customlicenser");
-        const userName = config.get<string>("authorName") || "Your Name";
-        const userEmail =
-            config.get<string>("authorEmail") || "your.email@example.com";
-
-        const processedTemplate = processLicenseTemplate(licenseTemplate, {
-            name: userName,
-            email: userEmail,
-        });
-
-        const res = await applyLicenseToCurrentFile(processedTemplate);
-
-        if (res === true) {
-            info("License successfully added to current file");
-        } else {
-            error("Failed to add license to current file");
-            return undefined;
-        }
-    } catch (err) {
-        error(`Failed to add license: ${err}`);
-    }
-};
+// Global managers - will be initialized in activate()
+let licenseManager: LicenseManager;
+let templateManager: TemplateManager;
 
 /**
  * Activates the CustomLicenser extension.
  *
- * Initializes background services including license detection and auto-add functionality.
+ * Initializes the manager-based architecture with proper dependency injection.
  * Registers all VS Code commands for license management operations.
  *
  * @param context - The VS Code extension context for managing subscriptions and lifecycle
  */
-export function activate(context: vscode.ExtensionContext) {
-    // Start background services
-    startLicenseDetection();
+export async function activate(context: vscode.ExtensionContext) {
+	try {
+		console.log("CustomLicenser: Starting activation...");
 
-    // Enable auto-add on save if configured
-    if (isAutoAddOnSaveEnabled()) {
-        enableAutoAddOnSave();
-    }
+		// Initialize services with dependency injection
+		const configService = new ConfigService();
+		const fileService = new FileService();
 
-    const commands = [
-        {
-            command: "customlicenser.toggleAutoSave",
-            callback: async () => {
-                const isEnabled = await configureAutoAddOnSave();
-                const config: vscode.WorkspaceConfiguration =
-                    vscode.workspace.getConfiguration("customlicenser");
+		// Create default license template for template service
+		const defaultTemplate: LicenseTemplate = {
+			name: "mit",
+			content: "MIT License template",
+		};
+		const templateService = new TemplateService(
+			configService,
+			defaultTemplate
+		);
 
-                if (isEnabled === undefined) {
-                    error("Unable to set default toggle on save");
-                    await config.update(
-                        "toggleOnSave",
-                        false,
-                        vscode.ConfigurationTarget.Workspace
-                    );
-                    disableAutoAddOnSave();
-                } else if (isEnabled === true) {
-                    info("Successfully enabled autoSave ");
-                    await config.update(
-                        "toggleOnSave",
-                        true,
-                        vscode.ConfigurationTarget.Workspace
-                    );
-                    enableAutoAddOnSave();
-                } else {
-                    info("Successfully disabled autoSave ");
-                    await config.update(
-                        "toggleOnSave",
-                        false,
-                        vscode.ConfigurationTarget.Workspace
-                    );
-                    disableAutoAddOnSave();
-                }
-            },
-        },
-        {
-            command: "customlicenser.addYear",
-            callback: async () => {
-                const year = await setYear();
-                if (year !== undefined) {
-                    info(`Year has been saved to: ${year}`);
-                } else {
-                    error("Enable to save year, please try again ");
-                }
-            },
-        },
-        {
-            command: "customlicenser.addName",
-            callback: async () => {
-                const name = await displayInputBox({
-                    prompt: "Enter your name for license headers",
-                    placeHolder: "Your Name",
-                    ignoreFocusOut: true,
-                });
+		licenseManager = new LicenseManager(
+			configService,
+			templateService,
+			fileService
+		);
+		templateManager = new TemplateManager(templateService);
 
-                if (name) {
-                    const config =
-                        vscode.workspace.getConfiguration("customlicenser");
-                    await config.update(
-                        "authorName",
-                        name,
-                        vscode.ConfigurationTarget.Workspace
-                    );
-                    info(`Author name set to: ${name}`);
-                }
-            },
-        },
-        {
-            command: "customlicenser.selectLicense",
-            callback: () => addLicenseToFile(),
-        },
-        {
-            command: "customlicenser.addMITLicense",
-            callback: () => addLicenseToFile("MIT"),
-        },
-        {
-            command: "customlicenser.addGPLLicense",
-            callback: () => addLicenseToFile("GPL"),
-        },
-        {
-            command: "customlicenser.addApacheLicense",
-            callback: () => addLicenseToFile("Apache"),
-        },
-        {
-            command: "customlicenser.addBSDLicense",
-            callback: () => addLicenseToFile("BSD"),
-        },
-        {
-            command: "customlicenser.addISCLicense",
-            callback: () => addLicenseToFile("ISC"),
-        },
-        {
-            command: "customlicenser.addMozillaLicense",
-            callback: () => addLicenseToFile("Mozilla"),
-        },
-        {
-            command: "customlicenser.addCustomLicense",
-            callback: async () => {
-                const success = await addCustomLicense();
-                if (success === undefined) {
-                    error("Failed to add custom license");
-                }
-            },
-        },
-        {
-            command: "customlicenser.manageCustomLicenses",
-            callback: async () => {
-                const success = await editCustomLicense();
-                if (success === undefined) {
-                    info("No changes made to custom licenses");
-                }
-            },
-        },
-        {
-            command: "customlicenser.createCustomLicense",
-            callback: async () => {
-                const success = await createNewCustomLicense();
-                if (success === undefined) {
-                    error("Failed to create custom license");
-                }
-            },
-        },
-        {
-            command: "customlicenser.selectDefaultLicense",
-            callback: async () => {
-                const success = await selectDefaultLicense();
-                if (success === undefined) {
-                    info("No default license selected");
-                }
-            },
-        },
-        {
-            command: "customlicenser.checkLicenseCoverage",
-            callback: () => {
-                const detector = getLicenseDetector();
-                if (!detector) {
-                    error("License detection not running");
-                    return;
-                }
+		console.log("CustomLicenser: Managers initialized");
 
-                const statuses = detector.getLicenseStatuses();
-                const filesWithoutLicense = detector.getFilesWithoutLicense();
+		// Start license manager
+		try {
+			await licenseManager.start();
+		} catch (err) {
+			console.warn(
+				"CustomLicenser: Failed to start license manager:",
+				err
+			);
+		}
 
-                if (statuses.length === 0) {
-                    info("No code files detected in workspace");
-                    return;
-                }
+		// Enable auto-save if configured (but don't fail activation if it fails)
+		try {
+			if (licenseManager.isAutoSaveEnabled()) {
+				await licenseManager.enableAutoSave();
+				console.log("CustomLicenser: Auto-save enabled");
+			}
+		} catch (err) {
+			console.warn("CustomLicenser: Failed to enable auto-save:", err);
+		}
 
-                const totalFiles = statuses.length;
-                const filesWithLicense =
-                    totalFiles - filesWithoutLicense.length;
-                const percentage = Math.round(
-                    (filesWithLicense / totalFiles) * 100
-                );
+		// Register commands
+		const commands = [
+			// Test command to verify extension is working
+			{
+				command: "customlicenser.test",
+				callback: async () => {
+					try {
+						console.log(
+							"Extension: Test command called - extension is working!"
+						);
+						await info(
+							"CustomLicenser extension is working! Test command executed successfully."
+						);
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Test command failed: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			// Configuration commands
+			{
+				command: "customlicenser.addYear",
+				callback: async () => {
+					try {
+						const year = await vscode.window.showInputBox({
+							prompt: "Enter the year for license headers",
+							placeHolder: new Date().getFullYear().toString(),
+							value: new Date().getFullYear().toString(),
+							ignoreFocusOut: true,
+							validateInput: (value) => {
+								const yearNum = parseInt(value);
+								if (
+									isNaN(yearNum) ||
+									yearNum < 1900 ||
+									yearNum > 2100
+								) {
+									return "Please enter a valid year between 1900 and 2100";
+								}
+								return null;
+							},
+						});
 
-                const message =
-                    `License Coverage Report:\n` +
-                    `Files with licenses: ${filesWithLicense}/${totalFiles} (${percentage}%)\n` +
-                    `Files without licenses: ${filesWithoutLicense.length}`;
+						if (year) {
+							await configService.updateYear(year);
+							await info(`Year updated to: ${year}`);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to update year: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.addName",
+				callback: async () => {
+					try {
+						const name = await vscode.window.showInputBox({
+							prompt: "Enter your name for license headers",
+							placeHolder: "Your Name",
+							ignoreFocusOut: true,
+							validateInput: (value) => {
+								if (!value || value.trim().length === 0) {
+									return "Name cannot be empty";
+								}
+								return null;
+							},
+						});
 
-                if (filesWithoutLicense.length > 0) {
-                    const fileList = filesWithoutLicense
-                        .slice(0, 10) // Show first 10 files
-                        .map((status: any) => status.filePath.split("/").pop())
-                        .join(", ");
+						if (name) {
+							await configService.updateAuthorName(name);
+							await info(`Author name set to: ${name}`);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to update author name: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.toggleAutoSave",
+				callback: async () => {
+					try {
+						if (licenseManager.isAutoSaveEnabled()) {
+							await licenseManager.disableAutoSave();
+							await info("Auto-save disabled");
+						} else {
+							await licenseManager.enableAutoSave();
+							await info("Auto-save enabled");
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to toggle auto-save: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			// Standard license commands
+			{
+				command: "customlicenser.selectLicense",
+				callback: async () => {
+					try {
+						const availableLicenses =
+							await licenseManager.getAvailableLicenses();
 
-                    const fullMessage =
-                        message +
-                        `\n\nFiles without licenses: ${fileList}` +
-                        (filesWithoutLicense.length > 10
-                            ? ` and ${filesWithoutLicense.length - 10} more...`
-                            : "");
+						if (availableLicenses.length === 0) {
+							await info(
+								"No licenses available. Create some licenses first."
+							);
+							return;
+						}
 
-                    warn(fullMessage);
-                } else {
-                    info(message + "\n\nAll files have licenses! 🎉");
-                }
-            },
-        },
-        {
-            command: "customlicenser.configureSettings",
-            callback: () => {
-                vscode.commands.executeCommand(
-                    "workbench.action.openSettings",
-                    "customlicenser"
-                );
-            },
-        },
-    ];
+						const selectedLicense =
+							await vscode.window.showQuickPick(
+								availableLicenses,
+								{
+									placeHolder:
+										"Select a license to add to the current file",
+								}
+							);
 
-    commands.forEach(({ command, callback }) => {
-        const disposable = vscode.commands.registerCommand(command, callback);
-        context.subscriptions.push(disposable);
-    });
+						if (selectedLicense) {
+							const success =
+								await licenseManager.addLicenseToFile(
+									selectedLicense as any
+								);
+							if (success) {
+								await info(
+									`${selectedLicense} license added successfully`
+								);
+							} else {
+								await warn(
+									"License addition was cancelled or failed"
+								);
+							}
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to add license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.addMITLicense",
+				callback: async () => {
+					try {
+						console.log("Extension: addMITLicense command called");
+						const success = await licenseManager.addLicenseToFile(
+							"mit"
+						);
+						if (success) {
+							await info("MIT license added successfully");
+						} else {
+							await warn(
+								"MIT license addition was cancelled or failed"
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to add MIT license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.addGPLLicense",
+				callback: async () => {
+					try {
+						const success = await licenseManager.addLicenseToFile(
+							"gpl"
+						);
+						if (success) {
+							await info("GPL license added successfully");
+						} else {
+							await warn(
+								"GPL license addition was cancelled or failed"
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to add GPL license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.addApacheLicense",
+				callback: async () => {
+					try {
+						const success = await licenseManager.addLicenseToFile(
+							"apache"
+						);
+						if (success) {
+							await info("Apache license added successfully");
+						} else {
+							await warn(
+								"Apache license addition was cancelled or failed"
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to add Apache license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.addBSDLicense",
+				callback: async () => {
+					try {
+						const success = await licenseManager.addLicenseToFile(
+							"bsd"
+						);
+						if (success) {
+							await info("BSD license added successfully");
+						} else {
+							await warn(
+								"BSD license addition was cancelled or failed"
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to add BSD license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.addISCLicense",
+				callback: async () => {
+					try {
+						const success = await licenseManager.addLicenseToFile(
+							"isc"
+						);
+						if (success) {
+							await info("ISC license added successfully");
+						} else {
+							await warn(
+								"ISC license addition was cancelled or failed"
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to add ISC license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.addMozillaLicense",
+				callback: async () => {
+					try {
+						const success = await licenseManager.addLicenseToFile(
+							"mozilla"
+						);
+						if (success) {
+							await info("Mozilla license added successfully");
+						} else {
+							await warn(
+								"Mozilla license addition was cancelled or failed"
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to add Mozilla license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			// Custom license commands
+			{
+				command: "customlicenser.createCustomLicense",
+				callback: async () => {
+					try {
+						console.log(
+							"Extension: createCustomLicense command called"
+						);
+
+						const templateName = await vscode.window.showInputBox({
+							prompt: "Enter a name for your custom license template",
+							placeHolder: "My Custom License",
+							ignoreFocusOut: true,
+							validateInput: (value) => {
+								if (!value || value.trim().length === 0) {
+									return "Template name cannot be empty";
+								}
+								return null;
+							},
+						});
+
+						console.log(
+							`Extension: Template name received: "${templateName}"`
+						);
+
+						if (templateName) {
+							console.log(
+								"Extension: Calling templateManager.handleTemplateCreation"
+							);
+							await templateManager.handleTemplateCreation(
+								templateName as any
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						console.error(
+							"Extension: Error in createCustomLicense:",
+							err
+						);
+						await error(
+							`Failed to create custom license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.editCustomLicense",
+				callback: async () => {
+					try {
+						const availableLicenses =
+							await licenseManager.getAvailableLicenses();
+
+						if (availableLicenses.length === 0) {
+							await info(
+								"No custom licenses available. Create one first."
+							);
+							return;
+						}
+
+						const selectedLicense =
+							await vscode.window.showQuickPick(
+								availableLicenses,
+								{
+									placeHolder:
+										"Select a custom license to edit",
+								}
+							);
+
+						if (selectedLicense) {
+							await templateManager.handleTemplateEditing(
+								selectedLicense
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to edit custom license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.selectDefaultLicense",
+				callback: async () => {
+					try {
+						const availableLicenses =
+							await licenseManager.getAvailableLicenses();
+
+						if (availableLicenses.length === 0) {
+							await info(
+								"No licenses available. Create some licenses first."
+							);
+							return;
+						}
+
+						const selectedLicense =
+							await vscode.window.showQuickPick(
+								availableLicenses,
+								{
+									placeHolder: "Select your default license",
+								}
+							);
+
+						if (selectedLicense) {
+							const defaultTemplate =
+								licenseManager.getDefaultLicense();
+							// Update the default license in config
+							await configService.updateDefaultLicense({
+								name: selectedLicense as any,
+								content: defaultTemplate.content,
+							});
+							await info(
+								`Default license set to: ${selectedLicense}`
+							);
+						}
+					} catch (err) {
+						const errorMessage =
+							err instanceof Error
+								? err.message
+								: "Unknown error occurred";
+						await error(
+							`Failed to select default license: ${errorMessage}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				},
+			},
+			{
+				command: "customlicenser.configureSettings",
+				callback: () => {
+					vscode.commands.executeCommand(
+						"workbench.action.openSettings",
+						"customlicenser"
+					);
+				},
+			},
+		];
+
+		// Register all commands
+		commands.forEach(({ command, callback }) => {
+			const disposable = vscode.commands.registerCommand(
+				command,
+				callback
+			);
+			context.subscriptions.push(disposable);
+		});
+
+		await info("CustomLicenser extension activated successfully");
+	} catch (err) {
+		const errorMessage =
+			err instanceof Error ? err.message : "Unknown error occurred";
+		await error(
+			`Failed to activate extension: ${errorMessage}`,
+			err instanceof Error ? err : undefined
+		);
+	}
 }
 
 export function deactivate() {
-    stopLicenseDetection();
-    disableAutoAddOnSave();
+	try {
+		if (licenseManager) {
+			licenseManager.stop();
+		}
+		console.info("CustomLicenser extension deactivated");
+	} catch (err) {
+		const errorMessage =
+			err instanceof Error ? err.message : "Unknown error occurred";
+		console.error(`Failed to deactivate extension: ${errorMessage}`, err);
+	}
 }

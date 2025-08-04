@@ -10,6 +10,8 @@
 		"Other"
 	],
 	"activationEvents": [
+		"onStartupFinished",
+		"onCommand:customlicenser.test",
 		"onCommand:customlicenser.addMITLicense",
 		"onCommand:customlicenser.addGPLLicense",
 		"onCommand:customlicenser.addApacheLicense",
@@ -21,11 +23,9 @@
 		"onCommand:customlicenser.addYear",
 		"onCommand:customlicenser.addName",
 		"onCommand:customlicenser.selectDefaultLicense",
-		"onCommand:customlicenser.checkLicenseCoverage",
-		"onCommand:customlicenser.configureSettings",
-		"onCommand:customlicenser.addCustomLicense",
-		"onCommand:customlicenser.manageCustomLicenses",
 		"onCommand:customlicenser.createCustomLicense",
+		"onCommand:customlicenser.editCustomLicense",
+		"onCommand:customlicenser.configureSettings",
 		"onLanguage:javascript",
 		"onLanguage:typescript",
 		"onLanguage:python",
@@ -67,23 +67,8 @@
 				"category": "CustomLicenser"
 			},
 			{
-				"command": "customlicenser.addCustomLicense",
-				"title": "Add Custom License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.manageCustomLicenses",
-				"title": "Manage Custom Licenses",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.checkLicenseCoverage",
-				"title": "Check License Coverage",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.configureSettings",
-				"title": "Configure Settings",
+				"command": "customlicenser.selectLicense",
+				"title": "Select License to Add",
 				"category": "CustomLicenser"
 			},
 			{
@@ -102,13 +87,28 @@
 				"category": "CustomLicenser"
 			},
 			{
-				"command": "customlicenser.selectLicense",
-				"title": "Select License to Add",
+				"command": "customlicenser.selectDefaultLicense",
+				"title": "Select Default License",
 				"category": "CustomLicenser"
 			},
 			{
-				"command": "customlicenser.selectDefaultLicense",
-				"title": "Select Default License",
+				"command": "customlicenser.createCustomLicense",
+				"title": "Create Custom License",
+				"category": "CustomLicenser"
+			},
+			{
+				"command": "customlicenser.editCustomLicense",
+				"title": "Edit Custom License",
+				"category": "CustomLicenser"
+			},
+			{
+				"command": "customlicenser.configureSettings",
+				"title": "Configure Settings",
+				"category": "CustomLicenser"
+			},
+			{
+				"command": "customlicenser.test",
+				"title": "Run Tests",
 				"category": "CustomLicenser"
 			}
 		],
@@ -203,27 +203,62 @@
 					"default": "your.email@example.com",
 					"description": "Author email for license headers"
 				},
+				"customlicenser.year": {
+					"type": "string",
+					"default": "2024",
+					"description": "Year for license headers"
+				},
 				"customlicenser.toggleOnSave": {
 					"type": "boolean",
 					"default": false,
 					"description": "Enable auto-add license on save"
+				},
+				"customlicenser.customTemplates": {
+					"type": "array",
+					"default": [],
+					"description": "Custom license templates",
+					"items": {
+						"type": "object",
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "Template name"
+							},
+							"content": {
+								"type": "string",
+								"description": "Template content"
+							}
+						},
+						"required": [
+							"name",
+							"content"
+						]
+					}
+				},
+				"customlicenser.defaultLicense": {
+					"type": "object",
+					"default": {
+						"name": "mit",
+						"content": ""
+					},
+					"description": "Default license template",
+					"properties": {
+						"name": {
+							"type": "string",
+							"description": "License name"
+						},
+						"content": {
+							"type": "string",
+							"description": "License content"
+						}
+					}
 				}
 			}
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run package",
-		"compile": "npm run check-types && npm run lint && node esbuild.js",
-		"watch": "npm-run-all -p watch:*",
-		"watch:esbuild": "node esbuild.js --watch",
-		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-		"package": "npm run check-types && npm run lint && node esbuild.js --production",
-		"compile-tests": "tsc -p . --outDir out",
-		"watch-tests": "tsc -p . -w --outDir out",
-		"pretest": "npm run compile-tests && npm run compile && npm run lint",
-		"check-types": "tsc --noEmit",
-		"lint": "eslint src",
-		"test": "vscode-test"
+		"copy-templates": "cp -r src/license-templates dist/",
+		"build": "npm run compile && npm run copy-templates"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
@@ -238,7 +273,9 @@
 		"npm-run-all": "^4.1.5",
 		"typescript": "^5.8.3"
 	},
-	"dependencies": {
-		"fuse.js": "^7.1.0"
-	}
+	"dependencies": {},
+	"files": [
+		"dist/**/*",
+		"license-templates/**/*"
+	]
 }

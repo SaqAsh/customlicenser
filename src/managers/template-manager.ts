@@ -38,51 +38,58 @@ export class TemplateManager implements ITemplateManager {
 
 	async handleTemplateCreation(templateName: string): Promise<void> {
 		try {
-			const document = await vscode.workspace.openTextDocument({
-				content: "",
-				language: "plaintext",
+			console.log(
+				`TemplateManager: Starting template creation for "${templateName}"`
+			);
+
+			// Get template content from user input with multi-line support
+			const templateContent = await vscode.window.showInputBox({
+				prompt: `Enter the content for your "${templateName}" template`,
+				placeHolder:
+					"Enter your license template content here... (newlines will be auto-detected)",
+				ignoreFocusOut: true,
+				validateInput: (value) => {
+					if (!value || value.trim().length === 0) {
+						return "Template content cannot be empty";
+					}
+					return null;
+				},
 			});
 
-			await vscode.window.showTextDocument(document);
+			if (templateContent) {
+				try {
+					// Smart newline detection and processing
+					const processedContent =
+						this.processTemplateContent(templateContent);
 
-			await info(
-				`Please enter your template content for "${templateName}" and save the document when done.`
-			);
-
-			const saveDisposable = vscode.workspace.onDidSaveTextDocument(
-				async (savedDocument) => {
-					if (savedDocument === document) {
-						const templateContent = document.getText();
-
-						if (templateContent.trim()) {
-							await this.templateService.createCustomTemplate(
-								templateName,
-								templateContent
-							);
-							await info(
-								`Template "${templateName}" created successfully!`
-							);
-						} else {
-							await warn("Template content cannot be empty.");
-						}
-
-						saveDisposable.dispose();
-					}
+					await this.templateService.createCustomTemplate(
+						templateName,
+						processedContent
+					);
+					await info(
+						`Template "${templateName}" created successfully!`
+					);
+				} catch (err) {
+					console.error(
+						"TemplateManager: Failed to create template:",
+						err
+					);
+					await error(
+						`Failed to create template: ${
+							err instanceof Error ? err.message : "Unknown error"
+						}`
+					);
 				}
-			);
-
-			const closeDisposable = vscode.window.onDidChangeActiveTextEditor(
-				async (activeEditor) => {
-					if (!activeEditor || activeEditor.document !== document) {
-						await info("Template creation cancelled.");
-						closeDisposable.dispose();
-						saveDisposable.dispose();
-					}
-				}
-			);
+			} else {
+				await info("Template creation cancelled.");
+			}
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "Unknown error occurred";
+			console.error(
+				`TemplateManager: Error in handleTemplateCreation:`,
+				err
+			);
 			await error(
 				`Failed to create template: ${errorMessage}`,
 				err instanceof Error ? err : undefined
@@ -102,48 +109,48 @@ export class TemplateManager implements ITemplateManager {
 				return;
 			}
 
-			const document = await vscode.workspace.openTextDocument({
-				content: existingTemplate.content,
-				language: "plaintext",
+			// Get updated template content from user input
+			const templateContent = await vscode.window.showInputBox({
+				prompt: `Edit the content for "${templateName}" template`,
+				placeHolder:
+					"Enter your updated license template content... (newlines will be auto-detected)",
+				value: existingTemplate.content,
+				ignoreFocusOut: true,
+				validateInput: (value) => {
+					if (!value || value.trim().length === 0) {
+						return "Template content cannot be empty";
+					}
+					return null;
+				},
 			});
 
-			await vscode.window.showTextDocument(document);
+			if (templateContent) {
+				try {
+					// Smart newline detection and processing
+					const processedContent =
+						this.processTemplateContent(templateContent);
 
-			await info(
-				`Please edit your template content for "${templateName}" and save the document when done.`
-			);
-
-			const saveDisposable = vscode.workspace.onDidSaveTextDocument(
-				async (savedDocument) => {
-					if (savedDocument === document) {
-						const templateContent = document.getText();
-
-						if (templateContent.trim()) {
-							await this.templateService.updateCustomTemplate(
-								templateName,
-								templateContent
-							);
-							await info(
-								`Template "${templateName}" updated successfully!`
-							);
-						} else {
-							await warn("Template content cannot be empty.");
-						}
-
-						saveDisposable.dispose();
-					}
+					await this.templateService.updateCustomTemplate(
+						templateName,
+						processedContent
+					);
+					await info(
+						`Template "${templateName}" updated successfully!`
+					);
+				} catch (err) {
+					console.error(
+						"TemplateManager: Failed to update template:",
+						err
+					);
+					await error(
+						`Failed to update template: ${
+							err instanceof Error ? err.message : "Unknown error"
+						}`
+					);
 				}
-			);
-
-			const closeDisposable = vscode.window.onDidChangeActiveTextEditor(
-				async (activeEditor) => {
-					if (!activeEditor || activeEditor.document !== document) {
-						await info("Template editing cancelled.");
-						closeDisposable.dispose();
-						saveDisposable.dispose();
-					}
-				}
-			);
+			} else {
+				await info("Template editing cancelled.");
+			}
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "Unknown error occurred";
@@ -152,5 +159,50 @@ export class TemplateManager implements ITemplateManager {
 				err instanceof Error ? err : undefined
 			);
 		}
+	}
+
+	/**
+	 * Smart template content processing that auto-detects and handles newlines
+	 */
+	private processTemplateContent(content: string): string {
+		// First, normalize any existing \n sequences
+		let processed = content.replace(/\\n/g, "\n");
+
+		// Auto-detect common patterns that should have newlines
+		// Look for patterns like "Copyright...\n\nThis program..." or similar
+		const patterns = [
+			// Add newline after copyright statements
+			/(Copyright[^.]*\.)/g,
+			// Add newline after "All rights reserved"
+			/(All rights reserved\.)/g,
+			// Add newline after license name mentions
+			/(GNU [^.]*\.)/g,
+			/(MIT [^.]*\.)/g,
+			/(Apache [^.]*\.)/g,
+			/(BSD [^.]*\.)/g,
+			// Add newline before "This program" or similar
+			/(\.)(\s*)(This program)/g,
+			// Add newline before "If not, see"
+			/(\.)(\s*)(If not, see)/g,
+			// Add newline before "THE SOFTWARE IS PROVIDED"
+			/(\.)(\s*)(THE SOFTWARE IS PROVIDED)/g,
+			// Add newline before "IN NO EVENT"
+			/(\.)(\s*)(IN NO EVENT)/g,
+		];
+
+		// Apply patterns to add newlines where appropriate
+		patterns.forEach((pattern) => {
+			processed = processed.replace(pattern, "$1\n$2$3");
+		});
+
+		// Clean up multiple consecutive newlines (keep max 2)
+		processed = processed.replace(/\n{3,}/g, "\n\n");
+
+		// Ensure there's a newline at the end
+		if (!processed.endsWith("\n")) {
+			processed += "\n";
+		}
+
+		return processed;
 	}
 }
