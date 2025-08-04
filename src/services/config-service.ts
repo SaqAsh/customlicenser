@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
+import { IConfigService } from "./interfaces/IConfigService";
 
-export class ConfigService {
+export class ConfigService implements IConfigService {
     private readonly configName = "customlicenser";
 
     private get config(): vscode.WorkspaceConfiguration {

@@ -1,5 +1,3 @@
-import { determineCommentType } from "./loggers/comment-style-detector.ts";
-import { fileTypeManger } from "./file-info-extractor.ts";
 import { insertLicenseIntoCurrentFile } from "./loggers/license-template-reader.ts";
 import { blockFormatLicense, lineFormatLicense } from "./licenseFormatters.ts";
 import error from "./loggers/error.ts";
