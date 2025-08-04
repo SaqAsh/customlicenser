@@ -1,4 +1,4 @@
 export interface ILicenseService {
-    formatBlockLicense(): string;
-    formatLineLicense(): string;
+	formatBlockLicense(): string;
+	formatLineLicense(): string;
 }

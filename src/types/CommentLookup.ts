@@ -43,11 +43,6 @@ export const CommentLookup: CommentLookupType = {
 	scss: { type: "block", start: "/*", end: " */" },
 };
 
-/**
- * Array of supported programming language IDs.
- *
- * List of all language IDs that have comment style configurations.
- */
 export const Languages = [
 	"python",
 	"javascript",
