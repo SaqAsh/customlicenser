@@ -70,7 +70,7 @@ export class FileService implements IFileService {
 			}
 
 			const edit = await this.currentEditor.edit((editBuilder) => {
-				editBuilder.insert(new vscode.Position(0, 0), license + "\n");
+				editBuilder.insert(new vscode.Position(0, 0), license + "\n\n");
 			});
 
 			if (edit === false) {

@@ -97,7 +97,7 @@ export class LicenseService implements ILicenseService {
 					return `/* ${trimmedLine}`;
 				}
 				if (isEnd) {
-					return ` * ${trimmedLine} */`;
+					return ` * ${trimmedLine}\n */`;
 				}
 				return ` * ${trimmedLine}`;
 			case "python":
@@ -131,7 +131,7 @@ export class LicenseService implements ILicenseService {
 					return `/* ${trimmedLine}`;
 				}
 				if (isEnd) {
-					return ` * ${trimmedLine} */`;
+					return ` * ${trimmedLine}\n */`;
 				}
 				return ` * ${trimmedLine}`;
 		}

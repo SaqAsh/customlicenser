@@ -1,11 +1,8 @@
+import * as fs from "fs/promises";
+import * as path from "path";
 import * as vscode from "vscode";
 
-import {
-	ERROR_MESSAGES,
-	LANGUAGE_PLAINTEXT,
-	UI_MESSAGES,
-	VALIDATION_MESSAGES,
-} from "../constants";
+import { ERROR_MESSAGES, LANGUAGE_PLAINTEXT, UI_MESSAGES } from "../constants";
 import { error, info } from "../loggers";
 import { ITemplateService } from "../services/interfaces/ITemplateService";
 import { LicenseTemplate } from "../types";
@@ -13,6 +10,8 @@ import { ITemplateManager } from "./interfaces/ITemplateManager";
 
 export class TemplateManager implements ITemplateManager {
 	private readonly templateService: ITemplateService;
+	private saveListener?: vscode.Disposable;
+	private currentTemplateName?: string;
 
 	constructor(templateService: ITemplateService) {
 		this.templateService = templateService;
@@ -51,37 +50,15 @@ export class TemplateManager implements ITemplateManager {
 
 	async handleTemplateCreation(templateName: string): Promise<void> {
 		try {
-			const templateContent = await vscode.window.showInputBox({
-				prompt: `Enter the content for your "${templateName}" template`,
-				placeHolder: "Enter your license template content here...",
-				ignoreFocusOut: true,
-				validateInput: (value) => {
-					if (!value || value.trim().length === 0) {
-						return VALIDATION_MESSAGES.TEMPLATE_CONTENT_EMPTY;
-					}
-					return null;
-				},
-			});
-
-			if (!templateContent) {
-				info(UI_MESSAGES.TEMPLATE_CREATION_CANCELLED);
-				return;
-			}
-
-			try {
-				await this.templateService.createCustomTemplate(
-					templateName,
-					templateContent
-				);
-				info(`${templateName} ${UI_MESSAGES.TEMPLATE_CREATED_SUCCESS}`);
-			} catch (err) {
-				error(
-					`${ERROR_MESSAGES.FAILED_TO_CREATE_TEMPLATE} ${
-						err instanceof Error ? err.message : "Unknown error"
-					}`,
-					err instanceof Error ? err : undefined
-				);
-			}
+			const licenseFilePath = await this.createLicenseFile(
+				templateName,
+				""
+			);
+			await this.openAndListenForSave(
+				licenseFilePath,
+				templateName,
+				true
+			);
 		} catch (err) {
 			error(
 				`${ERROR_MESSAGES.FAILED_TO_CREATE_TEMPLATE} ${
@@ -106,38 +83,15 @@ export class TemplateManager implements ITemplateManager {
 				return;
 			}
 
-			const templateContent = await vscode.window.showInputBox({
-				prompt: `Edit the content for "${templateName}" template`,
-				placeHolder: "Enter your updated license template content...",
-				value: existingTemplate.content,
-				ignoreFocusOut: true,
-				validateInput: (value) => {
-					if (!value || value.trim().length === 0) {
-						return VALIDATION_MESSAGES.TEMPLATE_CONTENT_EMPTY;
-					}
-					return null;
-				},
-			});
-
-			if (!templateContent) {
-				info(UI_MESSAGES.TEMPLATE_EDITING_CANCELLED);
-				return;
-			}
-
-			try {
-				await this.templateService.updateCustomTemplate(
-					templateName,
-					templateContent
-				);
-				info(`${templateName} ${UI_MESSAGES.TEMPLATE_UPDATED_SUCCESS}`);
-			} catch (err) {
-				error(
-					`${ERROR_MESSAGES.FAILED_TO_UPDATE_TEMPLATE} ${
-						err instanceof Error ? err.message : "Unknown error"
-					}`,
-					err instanceof Error ? err : undefined
-				);
-			}
+			const licenseFilePath = await this.createLicenseFile(
+				templateName,
+				existingTemplate.content
+			);
+			await this.openAndListenForSave(
+				licenseFilePath,
+				templateName,
+				false
+			);
 		} catch (err) {
 			error(
 				`${ERROR_MESSAGES.FAILED_TO_EDIT_TEMPLATE} ${
@@ -148,5 +102,111 @@ export class TemplateManager implements ITemplateManager {
 				err instanceof Error ? err : undefined
 			);
 		}
+	}
+
+	private async createLicenseFile(
+		templateName: string,
+		content: string
+	): Promise<string> {
+		const workspaceFolders = vscode.workspace.workspaceFolders;
+		if (!workspaceFolders || workspaceFolders.length === 0) {
+			throw new Error("No workspace folder found");
+		}
+
+		const workspaceRoot = workspaceFolders[0].uri.fsPath;
+		const vscodeFolder = path.join(workspaceRoot, ".vscode");
+		const licenseFilePath = path.join(
+			vscodeFolder,
+			`${templateName}.license`
+		);
+
+		await fs.mkdir(vscodeFolder, { recursive: true });
+
+		const placeholderContent = content
+			? `# Enter your content below:\n\n${content}`
+			: `# Enter your content below:\n\n`;
+
+		await fs.writeFile(licenseFilePath, placeholderContent, "utf-8");
+		return licenseFilePath;
+	}
+
+	private async openAndListenForSave(
+		licenseFilePath: string,
+		templateName: string,
+		isCreating: boolean
+	): Promise<void> {
+		const document = await vscode.workspace.openTextDocument(
+			licenseFilePath
+		);
+		await vscode.window.showTextDocument(document);
+
+		this.currentTemplateName = templateName;
+		this.saveListener = vscode.workspace.onDidSaveTextDocument(
+			async (savedDocument) => {
+				if (savedDocument.uri.fsPath === licenseFilePath) {
+					try {
+						const content = await fs.readFile(
+							licenseFilePath,
+							"utf-8"
+						);
+						const cleanContent = content
+							.replace(/^# Enter your content below:\n\n/, "")
+							.trim();
+
+						if (!cleanContent) {
+							error("License template content cannot be empty");
+							return;
+						}
+
+						if (isCreating) {
+							await this.templateService.createCustomTemplate(
+								templateName,
+								cleanContent
+							);
+							info(
+								`${templateName} ${UI_MESSAGES.TEMPLATE_CREATED_SUCCESS}`
+							);
+						} else {
+							await this.templateService.updateCustomTemplate(
+								templateName,
+								cleanContent
+							);
+							info(
+								`${templateName} ${UI_MESSAGES.TEMPLATE_UPDATED_SUCCESS}`
+							);
+						}
+
+						await this.cleanupTemplateFile(licenseFilePath);
+						this.disposeSaveListener();
+					} catch (err) {
+						const errorMessage = isCreating
+							? ERROR_MESSAGES.FAILED_TO_CREATE_TEMPLATE
+							: ERROR_MESSAGES.FAILED_TO_UPDATE_TEMPLATE;
+						error(
+							`${errorMessage} ${
+								err instanceof Error
+									? err.message
+									: "Unknown error"
+							}`,
+							err instanceof Error ? err : undefined
+						);
+					}
+				}
+			}
+		);
+	}
+
+	private async cleanupTemplateFile(filePath: string): Promise<void> {
+		try {
+			await fs.unlink(filePath);
+		} catch (err) {}
+	}
+
+	private disposeSaveListener(): void {
+		if (this.saveListener) {
+			this.saveListener.dispose();
+			this.saveListener = undefined;
+		}
+		this.currentTemplateName = undefined;
 	}
 }
