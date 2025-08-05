@@ -53,8 +53,7 @@ export class TemplateManager implements ITemplateManager {
 		try {
 			const templateContent = await vscode.window.showInputBox({
 				prompt: `Enter the content for your "${templateName}" template`,
-				placeHolder:
-					"Enter your license template content here... (newlines will be auto-detected)",
+				placeHolder: "Enter your license template content here...",
 				ignoreFocusOut: true,
 				validateInput: (value) => {
 					if (!value || value.trim().length === 0) {
@@ -70,12 +69,9 @@ export class TemplateManager implements ITemplateManager {
 			}
 
 			try {
-				const processedContent =
-					this.processTemplateContent(templateContent);
-
 				await this.templateService.createCustomTemplate(
 					templateName,
-					processedContent
+					templateContent
 				);
 				info(`${templateName} ${UI_MESSAGES.TEMPLATE_CREATED_SUCCESS}`);
 			} catch (err) {
@@ -112,8 +108,7 @@ export class TemplateManager implements ITemplateManager {
 
 			const templateContent = await vscode.window.showInputBox({
 				prompt: `Edit the content for "${templateName}" template`,
-				placeHolder:
-					"Enter your updated license template content... (newlines will be auto-detected)",
+				placeHolder: "Enter your updated license template content...",
 				value: existingTemplate.content,
 				ignoreFocusOut: true,
 				validateInput: (value) => {
@@ -130,12 +125,9 @@ export class TemplateManager implements ITemplateManager {
 			}
 
 			try {
-				const processedContent =
-					this.processTemplateContent(templateContent);
-
 				await this.templateService.updateCustomTemplate(
 					templateName,
-					processedContent
+					templateContent
 				);
 				info(`${templateName} ${UI_MESSAGES.TEMPLATE_UPDATED_SUCCESS}`);
 			} catch (err) {
@@ -156,34 +148,5 @@ export class TemplateManager implements ITemplateManager {
 				err instanceof Error ? err : undefined
 			);
 		}
-	}
-
-	private processTemplateContent(content: string): string {
-		let processed = content.replace(/\\n/g, "\n");
-
-		const patterns = [
-			/(Copyright[^.]*\.)/g,
-			/(All rights reserved\.)/g,
-			/(GNU [^.]*\.)/g,
-			/(MIT [^.]*\.)/g,
-			/(Apache [^.]*\.)/g,
-			/(BSD [^.]*\.)/g,
-			/(\.)(\s*)(This program)/g,
-			/(\.)(\s*)(If not, see)/g,
-			/(\.)(\s*)(THE SOFTWARE IS PROVIDED)/g,
-			/(\.)(\s*)(IN NO EVENT)/g,
-		];
-
-		patterns.forEach((pattern) => {
-			processed = processed.replace(pattern, "$1\n$2$3");
-		});
-
-		processed = processed.replace(/\n{3,}/g, "\n\n");
-
-		if (!processed.endsWith("\n")) {
-			processed += "\n";
-		}
-
-		return processed;
 	}
 }
