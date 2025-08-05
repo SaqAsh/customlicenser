@@ -2,173 +2,181 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { LicenseTemplatePaths } from "../constants";
+import {
+	LicenseTemplatePaths,
+	EXTENSION_ID,
+	TEMPLATE_DIRECTORY,
+	ERROR_MESSAGES,
+} from "../constants";
 import { error } from "../loggers";
 import { LicenseTemplate, LicenseType } from "../types";
 import { IConfigService, ITemplateService } from "./interfaces";
 
 export class TemplateService implements ITemplateService {
-    readonly currentTemplate: LicenseTemplate;
-    readonly defaultLicenseTemplate: LicenseTemplate;
-    readonly allCustomTemplates: LicenseTemplate[];
-    readonly allTemplates: LicenseTemplate[];
+	readonly currentTemplate: LicenseTemplate;
+	readonly defaultLicenseTemplate: LicenseTemplate;
+	readonly allTemplates: LicenseTemplate[];
 
-    readonly configService: IConfigService;
+	readonly configService: IConfigService;
 
-    constructor(
-        configService: IConfigService,
-        currentTemplate: LicenseTemplate
-    ) {
-        this.configService = configService;
-        this.currentTemplate = currentTemplate;
-        this.defaultLicenseTemplate = this.configService.getDefaultLicense;
-        this.allCustomTemplates = this.configService.allCustomTemplates;
-        this.allTemplates = this.configService.allTemplates;
-    }
+	constructor(
+		configService: IConfigService,
+		currentTemplate: LicenseTemplate
+	) {
+		this.configService = configService;
+		this.currentTemplate = currentTemplate;
+		this.defaultLicenseTemplate = this.configService.getDefaultLicense;
+		this.allTemplates = this.configService.allTemplates;
+	}
 
-    async getTemplate(licenseType: LicenseType): Promise<string | undefined> {
-        // Check if it's a custom template first
-        const customTemplate = this.allCustomTemplates.find(
-            (template) => template.name === licenseType
-        );
+	get allCustomTemplates(): LicenseTemplate[] {
+		return this.configService.allCustomTemplates;
+	}
 
-        if (customTemplate) {
-            return customTemplate.content;
-        }
+	async getTemplate(licenseType: LicenseType): Promise<string | undefined> {
+		const customTemplate = this.allCustomTemplates.find(
+			(template) => template.name === licenseType
+		);
 
-        const filePath = LicenseTemplatePaths[licenseType];
-        if (!filePath) {
-            error(`No template path found for license type: ${licenseType}`);
-            return undefined;
-        }
+		if (customTemplate) {
+			return customTemplate.content;
+		}
 
-        return await this.readTemplateFromFile(filePath);
-    }
+		const filePath = LicenseTemplatePaths[licenseType];
+		if (!filePath) {
+			error(`${ERROR_MESSAGES.NO_TEMPLATE_PATH} ${licenseType}`);
+			return undefined;
+		}
 
-    private async findTemplateDirectory(): Promise<string | undefined> {
-        const possiblePaths = [
-            ...(vscode.extensions.getExtension("customlicenser")?.extensionPath
-                ? [
-                      path.join(
-                          vscode.extensions.getExtension("customlicenser")!
-                              .extensionPath,
-                          "license-templates"
-                      ),
-                  ]
-                : []),
-            path.join(process.cwd(), "dist", "license-templates"),
-            path.join(process.cwd(), "src", "license-templates"),
-            path.join(__dirname, "..", "license-templates"),
-            path.join(__dirname, "..", "dist", "license-templates"),
-            path.join(__dirname, "..", "..", "license-templates"),
-            path.join(__dirname, "..", "..", "dist", "license-templates"),
-        ];
+		return await this.readTemplateFromFile(filePath);
+	}
 
-        for (const possiblePath of possiblePaths) {
-            try {
-                await fs.access(possiblePath);
-                return possiblePath;
-            } catch {
-                continue;
-            }
-        }
+	private async findTemplateDirectory(): Promise<string | undefined> {
+		const possiblePaths = [
+			...(vscode.extensions.getExtension(EXTENSION_ID)?.extensionPath
+				? [
+						path.join(
+							vscode.extensions.getExtension(EXTENSION_ID)!
+								.extensionPath,
+							TEMPLATE_DIRECTORY
+						),
+				  ]
+				: []),
+			path.join(process.cwd(), "dist", TEMPLATE_DIRECTORY),
+			path.join(process.cwd(), "src", TEMPLATE_DIRECTORY),
+			path.join(__dirname, "..", TEMPLATE_DIRECTORY),
+			path.join(__dirname, "..", "dist", TEMPLATE_DIRECTORY),
+			path.join(__dirname, "..", "..", TEMPLATE_DIRECTORY),
+			path.join(__dirname, "..", "..", "dist", TEMPLATE_DIRECTORY),
+		];
 
-        return undefined;
-    }
+		for (const possiblePath of possiblePaths) {
+			try {
+				await fs.access(possiblePath);
+				return possiblePath;
+			} catch {
+				continue;
+			}
+		}
 
-    private async readTemplateFromFile(
-        filePath: string
-    ): Promise<string | undefined> {
-        try {
-            const templateDir = await this.findTemplateDirectory();
+		return undefined;
+	}
 
-            if (!templateDir) {
-                error("Template directory not found");
-                return undefined;
-            }
+	private async readTemplateFromFile(
+		filePath: string
+	): Promise<string | undefined> {
+		try {
+			const templateDir = await this.findTemplateDirectory();
 
-            const fullPath = path.join(templateDir, filePath);
+			if (!templateDir) {
+				error(ERROR_MESSAGES.TEMPLATE_DIRECTORY_NOT_FOUND);
+				return undefined;
+			}
 
-            try {
-                await fs.access(fullPath);
-            } catch {
-                error(`Template file not found: ${fullPath}`);
-                return undefined;
-            }
+			const fullPath = path.join(templateDir, filePath);
 
-            return await fs.readFile(fullPath, "utf-8");
-        } catch (err) {
-            const errorMessage =
-                err instanceof Error ? err.message : "Unknown error occurred";
-            error(
-                `Failed to read template file: ${errorMessage}`,
-                err instanceof Error ? err : undefined
-            );
-            return undefined;
-        }
-    }
+			try {
+				await fs.access(fullPath);
+			} catch {
+				error(`${ERROR_MESSAGES.TEMPLATE_FILE_NOT_FOUND} ${fullPath}`);
+				return undefined;
+			}
 
-    public async createCustomTemplate(
-        name: LicenseType,
-        content: string
-    ): Promise<void> {
-        const newTemplate: LicenseTemplate = {
-            name,
-            content,
-        };
+			return await fs.readFile(fullPath, "utf-8");
+		} catch (err) {
+			error(
+				`${ERROR_MESSAGES.FAILED_TO_READ_TEMPLATE} ${
+					err instanceof Error
+						? err.message
+						: "Unknown error occurred"
+				}`,
+				err instanceof Error ? err : undefined
+			);
+			return undefined;
+		}
+	}
 
-        const currentTemplates: LicenseTemplate[] =
-            this.configService.allCustomTemplates;
+	public async createCustomTemplate(
+		name: LicenseType,
+		content: string
+	): Promise<void> {
+		const newTemplate: LicenseTemplate = {
+			name,
+			content,
+		};
 
-        const existingTemplate = currentTemplates.find(
-            (template) => template.name === name
-        );
-        if (existingTemplate) {
-            error(`Template with name "${name}" already exists`);
-            return;
-        }
+		const currentTemplates: LicenseTemplate[] =
+			this.configService.allCustomTemplates;
 
-        const updatedTemplates = [...currentTemplates, newTemplate];
-        await this.configService.updateCustomTemplates(updatedTemplates);
-    }
+		const existingTemplate = currentTemplates.find(
+			(template) => template.name === name
+		);
+		if (existingTemplate) {
+			error(`Template with name "${name}" already exists`);
+			return;
+		}
 
-    public async updateCustomTemplate(
-        name: LicenseType,
-        content: string
-    ): Promise<void> {
-        const currentTemplates: LicenseTemplate[] =
-            this.configService.allCustomTemplates;
+		const updatedTemplates = [...currentTemplates, newTemplate];
+		await this.configService.updateCustomTemplates(updatedTemplates);
+	}
 
-        const templateIndex = currentTemplates.findIndex(
-            (template) => template.name === name
-        );
-        if (templateIndex === -1) {
-            error(`Template with name "${name}" not found`);
-            return;
-        }
+	public async updateCustomTemplate(
+		name: LicenseType,
+		content: string
+	): Promise<void> {
+		const currentTemplates: LicenseTemplate[] =
+			this.configService.allCustomTemplates;
 
-        const updatedTemplates = [...currentTemplates];
-        updatedTemplates[templateIndex] = {
-            name,
-            content,
-        };
+		const templateIndex = currentTemplates.findIndex(
+			(template) => template.name === name
+		);
+		if (templateIndex === -1) {
+			error(`Template with name "${name}" not found`);
+			return;
+		}
 
-        await this.configService.updateCustomTemplates(updatedTemplates);
-    }
+		const updatedTemplates = [...currentTemplates];
+		updatedTemplates[templateIndex] = {
+			name,
+			content,
+		};
 
-    public async deleteCustomTemplate(name: string): Promise<void> {
-        const currentTemplates: LicenseTemplate[] =
-            this.configService.allCustomTemplates;
+		await this.configService.updateCustomTemplates(updatedTemplates);
+	}
 
-        const updatedTemplates = currentTemplates.filter(
-            (template) => template.name !== name
-        );
+	public async deleteCustomTemplate(name: string): Promise<void> {
+		const currentTemplates: LicenseTemplate[] =
+			this.configService.allCustomTemplates;
 
-        if (updatedTemplates.length === currentTemplates.length) {
-            error(`Template with name "${name}" not found`);
-            return;
-        }
+		const updatedTemplates = currentTemplates.filter(
+			(template) => template.name !== name
+		);
 
-        await this.configService.updateCustomTemplates(updatedTemplates);
-    }
+		if (updatedTemplates.length === currentTemplates.length) {
+			error(`Template with name "${name}" not found`);
+			return;
+		}
+
+		await this.configService.updateCustomTemplates(updatedTemplates);
+	}
 }

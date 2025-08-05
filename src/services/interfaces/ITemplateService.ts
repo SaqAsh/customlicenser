@@ -4,7 +4,7 @@ import { LicenseType } from "../../types/LicenseType";
 export interface ITemplateService {
 	readonly currentTemplate: LicenseTemplate;
 	readonly defaultLicenseTemplate: LicenseTemplate;
-	readonly allCustomTemplates: LicenseTemplate[];
+	get allCustomTemplates(): LicenseTemplate[];
 	readonly allTemplates: LicenseTemplate[];
 
 	createCustomTemplate(name: string, content: string): Promise<void>;

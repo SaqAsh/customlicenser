@@ -1,176 +1,189 @@
 import * as vscode from "vscode";
 
+import {
+	ERROR_MESSAGES,
+	LANGUAGE_PLAINTEXT,
+	UI_MESSAGES,
+	VALIDATION_MESSAGES,
+} from "../constants";
 import { error, info } from "../loggers";
 import { ITemplateService } from "../services/interfaces/ITemplateService";
+import { LicenseTemplate } from "../types";
 import { ITemplateManager } from "./interfaces/ITemplateManager";
 
 export class TemplateManager implements ITemplateManager {
-    private readonly templateService: ITemplateService;
+	private readonly templateService: ITemplateService;
 
-    constructor(templateService: ITemplateService) {
-        this.templateService = templateService;
-    }
+	constructor(templateService: ITemplateService) {
+		this.templateService = templateService;
+	}
 
-    async openTemplateEditor(templateName: string): Promise<void> {
-        try {
-            const existingTemplate =
-                this.templateService.allCustomTemplates.find(
-                    (template) => template.name === templateName
-                );
+	get allCustomTemplates(): LicenseTemplate[] {
+		return this.templateService.allCustomTemplates;
+	}
 
-            const initialContent = existingTemplate?.content || "";
+	async openTemplateEditor(templateName: string): Promise<void> {
+		try {
+			const existingTemplate =
+				this.templateService.allCustomTemplates.find(
+					(template) => template.name === templateName
+				);
 
-            const document = await vscode.workspace.openTextDocument({
-                content: initialContent,
-                language: "plaintext",
-            });
+			const initialContent = existingTemplate?.content || "";
 
-            await vscode.window.showTextDocument(document);
-        } catch (err) {
-            const errorMessage =
-                err instanceof Error ? err.message : "Unknown error occurred";
-            await error(
-                `Failed to open template editor: ${errorMessage}`,
-                err instanceof Error ? err : undefined
-            );
-        }
-    }
+			const document = await vscode.workspace.openTextDocument({
+				content: initialContent,
+				language: LANGUAGE_PLAINTEXT,
+			});
 
-    async handleTemplateCreation(templateName: string): Promise<void> {
-        try {
-            const templateContent = await vscode.window.showInputBox({
-                prompt: `Enter the content for your "${templateName}" template`,
-                placeHolder:
-                    "Enter your license template content here... (newlines will be auto-detected)",
-                ignoreFocusOut: true,
-                validateInput: (value) => {
-                    if (!value || value.trim().length === 0) {
-                        return "Template content cannot be empty";
-                    }
-                    return null;
-                },
-            });
+			await vscode.window.showTextDocument(document);
+		} catch (err) {
+			error(
+				`${ERROR_MESSAGES.FAILED_TO_OPEN_EDITOR} ${
+					err instanceof Error
+						? err.message
+						: "Unknown error occurred"
+				}`,
+				err instanceof Error ? err : undefined
+			);
+		}
+	}
 
-            if (templateContent) {
-                try {
-                    const processedContent =
-                        this.processTemplateContent(templateContent);
+	async handleTemplateCreation(templateName: string): Promise<void> {
+		try {
+			const templateContent = await vscode.window.showInputBox({
+				prompt: `Enter the content for your "${templateName}" template`,
+				placeHolder:
+					"Enter your license template content here... (newlines will be auto-detected)",
+				ignoreFocusOut: true,
+				validateInput: (value) => {
+					if (!value || value.trim().length === 0) {
+						return VALIDATION_MESSAGES.TEMPLATE_CONTENT_EMPTY;
+					}
+					return null;
+				},
+			});
 
-                    await this.templateService.createCustomTemplate(
-                        templateName,
-                        processedContent
-                    );
-                    await info(
-                        `Template "${templateName}" created successfully!`
-                    );
-                } catch (err) {
-                    console.error(
-                        "TemplateManager: Failed to create template:",
-                        err
-                    );
-                    await error(
-                        `Failed to create template: ${
-                            err instanceof Error ? err.message : "Unknown error"
-                        }`
-                    );
-                }
-            } else {
-                await info("Template creation cancelled.");
-            }
-        } catch (err) {
-            const errorMessage =
-                err instanceof Error ? err.message : "Unknown error occurred";
-            await error(
-                `Failed to create template: ${errorMessage}`,
-                err instanceof Error ? err : undefined
-            );
-        }
-    }
+			if (!templateContent) {
+				info(UI_MESSAGES.TEMPLATE_CREATION_CANCELLED);
+				return;
+			}
 
-    async handleTemplateEditing(templateName: string): Promise<void> {
-        try {
-            const existingTemplate =
-                this.templateService.allCustomTemplates.find(
-                    (template) => template.name === templateName
-                );
+			try {
+				const processedContent =
+					this.processTemplateContent(templateContent);
 
-            if (existingTemplate === undefined) {
-                await error(`Template "${templateName}" not found.`);
-                return;
-            }
+				await this.templateService.createCustomTemplate(
+					templateName,
+					processedContent
+				);
+				info(`${templateName} ${UI_MESSAGES.TEMPLATE_CREATED_SUCCESS}`);
+			} catch (err) {
+				error(
+					`${ERROR_MESSAGES.FAILED_TO_CREATE_TEMPLATE} ${
+						err instanceof Error ? err.message : "Unknown error"
+					}`,
+					err instanceof Error ? err : undefined
+				);
+			}
+		} catch (err) {
+			error(
+				`${ERROR_MESSAGES.FAILED_TO_CREATE_TEMPLATE} ${
+					err instanceof Error
+						? err.message
+						: "Unknown error occurred"
+				}`,
+				err instanceof Error ? err : undefined
+			);
+		}
+	}
 
-            const templateContent = await vscode.window.showInputBox({
-                prompt: `Edit the content for "${templateName}" template`,
-                placeHolder:
-                    "Enter your updated license template content... (newlines will be auto-detected)",
-                value: existingTemplate.content,
-                ignoreFocusOut: true,
-                validateInput: (value) => {
-                    if (!value || value.trim().length === 0) {
-                        return "Template content cannot be empty";
-                    }
-                    return null;
-                },
-            });
+	async handleTemplateEditing(templateName: string): Promise<void> {
+		try {
+			const existingTemplate =
+				this.templateService.allCustomTemplates.find(
+					(template) => template.name === templateName
+				);
 
-            if (templateContent) {
-                try {
-                    const processedContent =
-                        this.processTemplateContent(templateContent);
+			if (existingTemplate === undefined) {
+				error(`Template "${templateName}" not found.`);
+				return;
+			}
 
-                    await this.templateService.updateCustomTemplate(
-                        templateName,
-                        processedContent
-                    );
-                    await info(
-                        `Template "${templateName}" updated successfully!`
-                    );
-                } catch (err) {
-                    await error(
-                        `Failed to update template: ${
-                            err instanceof Error ? err.message : "Unknown error"
-                        }`
-                    );
-                }
-            } else {
-                await info("Template editing cancelled.");
-            }
-        } catch (err) {
-            const errorMessage =
-                err instanceof Error ? err.message : "Unknown error occurred";
-            await error(
-                `Failed to edit template: ${errorMessage}`,
-                err instanceof Error ? err : undefined
-            );
-        }
-    }
+			const templateContent = await vscode.window.showInputBox({
+				prompt: `Edit the content for "${templateName}" template`,
+				placeHolder:
+					"Enter your updated license template content... (newlines will be auto-detected)",
+				value: existingTemplate.content,
+				ignoreFocusOut: true,
+				validateInput: (value) => {
+					if (!value || value.trim().length === 0) {
+						return VALIDATION_MESSAGES.TEMPLATE_CONTENT_EMPTY;
+					}
+					return null;
+				},
+			});
 
-    private processTemplateContent(content: string): string {
-        let processed = content.replace(/\\n/g, "\n");
+			if (!templateContent) {
+				info(UI_MESSAGES.TEMPLATE_EDITING_CANCELLED);
+				return;
+			}
 
-        const patterns = [
-            /(Copyright[^.]*\.)/g,
-            /(All rights reserved\.)/g,
-            /(GNU [^.]*\.)/g,
-            /(MIT [^.]*\.)/g,
-            /(Apache [^.]*\.)/g,
-            /(BSD [^.]*\.)/g,
-            /(\.)(\s*)(This program)/g,
-            /(\.)(\s*)(If not, see)/g,
-            /(\.)(\s*)(THE SOFTWARE IS PROVIDED)/g,
-            /(\.)(\s*)(IN NO EVENT)/g,
-        ];
+			try {
+				const processedContent =
+					this.processTemplateContent(templateContent);
 
-        patterns.forEach((pattern) => {
-            processed = processed.replace(pattern, "$1\n$2$3");
-        });
+				await this.templateService.updateCustomTemplate(
+					templateName,
+					processedContent
+				);
+				info(`${templateName} ${UI_MESSAGES.TEMPLATE_UPDATED_SUCCESS}`);
+			} catch (err) {
+				error(
+					`${ERROR_MESSAGES.FAILED_TO_UPDATE_TEMPLATE} ${
+						err instanceof Error ? err.message : "Unknown error"
+					}`,
+					err instanceof Error ? err : undefined
+				);
+			}
+		} catch (err) {
+			error(
+				`${ERROR_MESSAGES.FAILED_TO_EDIT_TEMPLATE} ${
+					err instanceof Error
+						? err.message
+						: "Unknown error occurred"
+				}`,
+				err instanceof Error ? err : undefined
+			);
+		}
+	}
 
-        processed = processed.replace(/\n{3,}/g, "\n\n");
+	private processTemplateContent(content: string): string {
+		let processed = content.replace(/\\n/g, "\n");
 
-        if (!processed.endsWith("\n")) {
-            processed += "\n";
-        }
+		const patterns = [
+			/(Copyright[^.]*\.)/g,
+			/(All rights reserved\.)/g,
+			/(GNU [^.]*\.)/g,
+			/(MIT [^.]*\.)/g,
+			/(Apache [^.]*\.)/g,
+			/(BSD [^.]*\.)/g,
+			/(\.)(\s*)(This program)/g,
+			/(\.)(\s*)(If not, see)/g,
+			/(\.)(\s*)(THE SOFTWARE IS PROVIDED)/g,
+			/(\.)(\s*)(IN NO EVENT)/g,
+		];
 
-        return processed;
-    }
+		patterns.forEach((pattern) => {
+			processed = processed.replace(pattern, "$1\n$2$3");
+		});
+
+		processed = processed.replace(/\n{3,}/g, "\n\n");
+
+		if (!processed.endsWith("\n")) {
+			processed += "\n";
+		}
+
+		return processed;
+	}
 }
