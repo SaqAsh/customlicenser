@@ -1,12 +1,11 @@
 export class StatusManager {
-	// Basic implementation - can be expanded later
-	constructor() {}
+    constructor() {}
 
-	start(): Promise<void> {
-		return Promise.resolve();
-	}
+    start(): Promise<void> {
+        return Promise.resolve();
+    }
 
-	stop(): Promise<void> {
-		return Promise.resolve();
-	}
+    stop(): Promise<void> {
+        return Promise.resolve();
+    }
 }
