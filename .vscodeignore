@@ -12,3 +12,6 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+README_backup.md
+DEVELOPMENT_GUIDE.md
+CHANGELOG.md
