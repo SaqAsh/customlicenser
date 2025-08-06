@@ -1,66 +1,52 @@
 # CustomLicenser
 
-A flexible VS Code extension that streamlines license management for your projects. Choose from popular open-source licenses or create your own custom licensing terms—perfect for developers, creators, and teams who need precise control over how their work is shared and used.
+A VS Code extension for adding license headers to your code files. Choose from standard licenses or create custom ones.
 
-## ✨ Features
+## Features
 
--   **Quick License Insertion**: Add licenses to your files with a single command
--   **Popular License Templates**: Built-in support for common licenses:
-    -   MIT License
-    -   GNU GPL v3
-    -   Apache License 2.0
-    -   BSD 3-Clause License
-    -   ISC License
-    -   Mozilla Public License 2.0
--   **Custom License Support**: Create and save your own licensing terms
--   **Auto-Insert on Save**: Automatically add license headers to new files (configurable)
--   **License Validation**: Warns when files are missing license headers
--   **Multi-Language Support**: Works with various programming languages and file types
--   **Customizable Headers**: Configure license header format and placement
+-   **Standard Licenses**: MIT, GPL v3, Apache 2.0, BSD 3-Clause, ISC, Mozilla Public License
+-   **Custom Licenses**: Create and save your own license templates
+-   **Auto-Insert**: Automatically add licenses to new files on save
+-   **Multi-Language**: Supports JavaScript, TypeScript, Python, Java, C++, C
+-   **Template Variables**: Use `{{name}}`, `{{year}}` in custom licenses
 
-## 🚀 Installation
+## Installation
 
-### From VS Code Marketplace
+1. Open VS Code Extensions (Ctrl+Shift+X)
+2. Search "CustomLicenser"
+3. Install
 
-1. Open VS Code
-2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
-3. Search for "CustomLicenser"
-4. Click Install
-
-### Manual Installation
-
-1. Download the `.vsix` file from releases
-2. In VS Code, go to Extensions
-3. Click the "..." menu and select "Install from VSIX..."
-4. Select the downloaded file
-
-## 📖 Usage
+## Usage
 
 ### Quick Start
 
-1. **Open a file** where you want to add a license
-2. **Open Command Palette** (Ctrl+Shift+P / Cmd+Shift+P)
-3. **Type "License"** to see available commands
-4. **Select your desired license** (e.g., "Add MIT License")
+1. Open a file
+2. Press Ctrl+Shift+P
+3. Type "CustomLicenser" to see commands
+4. Select your license
 
-### Available Commands
+### Commands
 
-| Command                                      | Description                             |
-| -------------------------------------------- | --------------------------------------- |
-| `CustomLicenser: Add MIT License`            | Insert MIT license header               |
-| `CustomLicenser: Add GPL v3 License`         | Insert GNU GPL v3 license header        |
-| `CustomLicenser: Add Apache 2.0 License`     | Insert Apache 2.0 license header        |
-| `CustomLicenser: Add BSD 3-Clause License`   | Insert BSD 3-Clause license header      |
-| `CustomLicenser: Add ISC License`            | Insert ISC license header               |
-| `CustomLicenser: Add Mozilla Public License` | Insert MPL 2.0 license header           |
-| `CustomLicenser: Add Custom License`         | Create and insert custom license        |
-| `CustomLicenser: Manage Custom Licenses`     | View and edit saved custom licenses     |
-| `CustomLicenser: Check License Coverage`     | Scan project for files missing licenses |
-| `CustomLicenser: Configure Settings`         | Open extension settings                 |
+| Command                      | Description                         |
+| ---------------------------- | ----------------------------------- |
+| `Add MIT License`            | Add MIT license header              |
+| `Add GPL v3 License`         | Add GPL v3 license header           |
+| `Add Apache 2.0 License`     | Add Apache license header           |
+| `Add BSD 3-Clause License`   | Add BSD license header              |
+| `Add ISC License`            | Add ISC license header              |
+| `Add Mozilla Public License` | Add Mozilla license header          |
+| `Select License to Add`      | Choose from available licenses      |
+| `Create Custom License`      | Create new custom license template  |
+| `Edit Custom License`        | Edit existing custom licenses       |
+| `Select Default License`     | Set default license for auto-insert |
+| `Toggle Auto Add On Save`    | Enable/disable auto-insert          |
+| `Add Year`                   | Set year for license headers        |
+| `Add Author Name`            | Set author name for headers         |
+| `Configure Settings`         | Open extension settings             |
 
 ### Example Output
 
-When you add an MIT license to a JavaScript file, it will insert:
+MIT license in JavaScript:
 
 ```javascript
 /*
@@ -88,258 +74,61 @@ When you add an MIT license to a JavaScript file, it will insert:
  */
 ```
 
-## ⚙️ Configuration
-
-Configure the extension through VS Code settings:
+## Configuration
 
 ```json
 {
 	"customlicenser.defaultAuthor": "Your Name",
 	"customlicenser.defaultEmail": "your.email@example.com",
-	"customlicenser.autoInsertOnSave": true,
+	"customlicenser.autoInsertOnSave": false,
 	"customlicenser.fileExtensions": [".js", ".ts", ".py", ".java", ".cpp"],
 	"customlicenser.headerStyle": "block-comment",
 	"customlicenser.insertAtTop": true,
-	"customlicenser.skipExistingLicense": true
+	"customlicenser.skipExistingLicense": true,
+	"customlicenser.authorName": "Your Name",
+	"customlicenser.authorEmail": "your.email@example.com",
+	"customlicenser.year": "2024"
 }
 ```
 
-### Settings Reference
+### Settings
 
-| Setting               | Type    | Default               | Description                                                    |
-| --------------------- | ------- | --------------------- | -------------------------------------------------------------- |
-| `defaultAuthor`       | string  | ""                    | Default author name for license headers                        |
-| `defaultEmail`        | string  | ""                    | Default email for license headers                              |
-| `autoInsertOnSave`    | boolean | false                 | Automatically add license to new files on save                 |
-| `fileExtensions`      | array   | [".js", ".ts", ".py"] | File types to auto-license                                     |
-| `headerStyle`         | string  | "block-comment"       | Comment style: "block-comment", "line-comment", "hash-comment" |
-| `insertAtTop`         | boolean | true                  | Insert license at file beginning                               |
-| `skipExistingLicense` | boolean | true                  | Skip files that already have licenses                          |
+| Setting               | Type    | Default                                | Description              |
+| --------------------- | ------- | -------------------------------------- | ------------------------ |
+| `defaultAuthor`       | string  | ""                                     | Default author name      |
+| `defaultEmail`        | string  | ""                                     | Default email            |
+| `autoInsertOnSave`    | boolean | false                                  | Auto-add license on save |
+| `fileExtensions`      | array   | [".js", ".ts", ".py", ".java", ".cpp"] | File types to process    |
+| `headerStyle`         | string  | "block-comment"                        | Comment style            |
+| `insertAtTop`         | boolean | true                                   | Insert at file beginning |
+| `skipExistingLicense` | boolean | true                                   | Skip files with licenses |
 
-## �� Custom Licenses
+## Custom Licenses
 
 ### Creating Custom Licenses
 
-1. Run `CustomLicenser: Add Custom License`
-2. Enter your license name
-3. Write your license text (supports variables like `{{AUTHOR}}`, `{{YEAR}}`)
-4. Save and use immediately
+1. Run `Create Custom License`
+2. Enter template name
+3. Write license text with variables
+4. Save to use immediately
 
-### Custom License Variables
+### Template Variables
 
-Use these variables in your custom licenses:
-
--   `{{AUTHOR}}` - Author name from settings
--   `{{EMAIL}}` - Email from settings
--   `{{YEAR}}` - Current year
--   `{{DATE}}` - Current date
--   `{{FILENAME}}` - Current file name
--   `{{PROJECT}}` - Project/workspace name
+-   `{{name}}` - Author name
+-   `{{year}}` - Current year
 
 ### Example Custom License
 
 ```
 Proprietary License
 
-Copyright (c) {{YEAR}} {{AUTHOR}}
+Copyright (c) {{year}} {{name}}
 
-This software is proprietary and confidential. Unauthorized copying
-of this file, via any medium, is strictly prohibited.
-
-Contact: {{EMAIL}}
+This software is proprietary and confidential.
+Unauthorized copying is strictly prohibited.
 ```
 
-## 🏗️ Architecture Overview
-
-### Core Files
-
-#### **`src/extension.ts`** - Main Extension Entry Point
-- Registers all VS Code commands
-- Initializes background services
-- Handles extension activation/deactivation
-- Main orchestrator for license operations
-
-#### **`src/BackgroundUtilities/`** - Core Business Logic
-
-**`commentTypeManger.ts`**
-- Detects programming language of current file
-- Determines appropriate comment style (line vs block)
-- Supports 17+ languages (Python, JavaScript, Java, C++, etc.)
-
-**`licenseReader.ts`**
-- Reads license templates from files
-- Handles custom license input
-- Processes template variables (`{{name}}`, `{{year}}`, `{{email}}`)
-
-**`licenseInserter.ts`**
-- Inserts formatted licenses into files
-- Checks for existing licenses
-- Handles file positioning and formatting
-
-**`licenseOrchestrator.ts`**
-- Main workflow coordinator
-- Combines all utilities for complete license operations
-- Handles error cases and user feedback
-
-**`licenseDetector.ts`**
-- Background service for license monitoring
-- Shows status bar with coverage percentage
-- Watches files for changes
-- Provides coverage reporting
-
-**`autoAddOnSave.ts`**
-- Automatically adds default license when saving
-- Respects user settings and file types
-- Silent operation to avoid disrupting workflow
-
-**`fileTypeManager.ts`**
-- Gets current file information
-- Extracts language ID and file path
-- Used by comment type manager
-
-#### **`src/Commands/`** - User Interface Layer
-
-**`selectLicenseToAdd.ts`**
-- Shows license selection quick pick
-- Defines available license types
-- Handles user selection
-
-**`addCustomLicense.ts`**
-- Prompts for custom license text
-- Validates input
-- Formats with appropriate comment style
-
-**`editCustomLicense.ts`**
-- Manages custom license templates
-- Create, edit, and delete custom licenses
-- Stores in workspace configuration
-
-**`selectDefaultLicense.ts`**
-- Sets default license for workspace
-- Saves to workspace configuration
-- Used by auto-add functionality
-
-**`toggleAutoAddOnSave.ts`**
-- Enables/disables auto-add feature
-- Updates workspace settings
-- Provides user feedback
-
-**`addYear.ts`**
-- Sets current year for license templates
-- Updates workspace configuration
-- Used by template processing
-
-#### **`src/types/`** - Type Definitions
-
-**`CommentLookup.ts`**
-- Defines comment styles for each language
-- Discriminated union types for type safety
-- Supports line comments (`#`, `//`) and block comments (`/* */`)
-
-#### **`src/LicenseTemplates/`** - License Templates
-
-Contains standard license templates:
-- `MIT.txt` - MIT License
-- `Apache.txt` - Apache 2.0 License  
-- `GPL.txt` - GNU General Public License
-- `BSD.txt` - BSD 3-Clause License
-- `ISC.txt` - ISC License
-- `Mozilla.txt` - Mozilla Public License
-
-All templates support variable substitution:
-- `{{year}}` - Current year
-- `{{name}}` - Author name
-- `{{email}}` - Author email
-
-## 🎯 How It Works
-
-### 1. **License Selection**
-```
-User selects license → Quick pick shows options → Template is loaded
-```
-
-### 2. **Language Detection**
-```
-File opened → Language ID detected → Comment style determined
-```
-
-### 3. **Template Processing**
-```
-Template loaded → Variables substituted → Comment formatting applied
-```
-
-### 4. **File Insertion**
-```
-Formatted license → Inserted at file top → File saved
-```
-
-### 5. **Background Monitoring**
-```
-Files watched → License detection → Status bar updated
-```
-
-## 📊 Status Bar
-
-The extension shows license coverage in the status bar:
-- `License: 5/10 (50%)` - Shows files with licenses vs total
-- Click to view detailed coverage report
-- Updates automatically as files change
-
-## 📁 File Structure
-
-```
-src/
-├── extension.ts                    # Main extension entry point
-├── BackgroundUtilities/            # Core business logic
-│   ├── commentTypeManger.ts       # Language/comment detection
-│   ├── licenseReader.ts           # Template reading/processing
-│   ├── licenseInserter.ts         # File insertion logic
-│   ├── licenseOrchestrator.ts     # Main workflow coordinator
-│   ├── licenseDetector.ts         # Background monitoring
-│   ├── autoAddOnSave.ts           # Auto-add functionality
-│   └── fileTypeManager.ts         # File type detection
-├── Commands/                      # User interface layer
-│   ├── selectLicenseToAdd.ts      # License selection UI
-│   ├── addCustomLicense.ts        # Custom license creation
-│   ├── editCustomLicense.ts       # Custom license management
-│   ├── selectDefaultLicense.ts    # Default license setting
-│   ├── toggleAutoAddOnSave.ts     # Auto-add toggle
-│   └── addYear.ts                 # Year setting utility
-├── types/                         # Type definitions
-│   └── CommentLookup.ts           # Comment style definitions
-├── LicenseTemplates/              # License template files
-│   ├── MIT.txt
-│   ├── Apache.txt
-│   ├── GPL.txt
-│   ├── BSD.txt
-│   ├── ISC.txt
-│   └── Mozilla.txt
-└── test/                         # Test files
-```
-
-## 🎨 Comment Formatting Examples
-
-### Line Comments (Python, Shell, etc.)
-```python
-# MIT License
-# 
-# Copyright (c) 2024 John Doe
-# 
-# Permission is hereby granted...
-```
-
-### Block Comments (JavaScript, Java, C++, etc.)
-```javascript
-/*
- * MIT License
- * 
- * Copyright (c) 2024 John Doe
- * 
- * Permission is hereby granted, free of charge...
- */
-```
-
-## 🔧 Development
+## Development
 
 ### Prerequisites
 
@@ -349,9 +138,10 @@ src/
 ### Setup
 
 ```bash
-git clone https://github.com/yourusername/customlicenser
+git clone <repository>
 cd customlicenser
 npm install
+npm run build
 ```
 
 ### Testing
@@ -360,55 +150,14 @@ npm install
 npm run test
 ```
 
-### Building
+## Roadmap
 
-```bash
-npm run package
-```
+-   [ ] License coverage reporting
+-   [ ] Bulk license insertion
+-   [ ] License template editor
+-   [ ] Export/import license collections
+-   [ ] Team template sharing
 
-### Advanced Development Setup
+## License
 
-```bash
-npm run compile    # Compile TypeScript
-npm run watch      # Watch for changes
-F5                 # Launch Extension Development Host
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🐛 Issues & Support
-
--   **Bug Reports**: [GitHub Issues](https://github.com/yourusername/customlicenser/issues)
--   **Feature Requests**: [GitHub Issues](https://github.com/yourusername/customlicenser/issues)
--   **Documentation**: [Wiki](https://github.com/yourusername/customlicenser/wiki)
-
-## 🎯 Roadmap
-
--   [ ] License template editor with syntax highlighting
--   [ ] Bulk license insertion for entire projects
--   [ ] Integration with popular package managers
--   [ ] License compatibility checker
--   [ ] Export/import custom license collections
--   [ ] Team license template sharing
-
-## 📊 Stats
-
-![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/customlicenser)
-![Downloads](https://img.shields.io/visual-studio-marketplace/d/customlicenser)
-![Rating](https://img.shields.io/visual-studio-marketplace/r/customlicenser)
-
----
-
-Made with ❤️ by developers, for developers.
+MIT License - see LICENSE file for details.
