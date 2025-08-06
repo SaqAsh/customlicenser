@@ -10,16 +10,16 @@ import { QuickPickItem } from "vscode";
  *  @return Promise that resolves to the selected value or undefined if cancelled
  */
 export const displayQuickPick = <T extends QuickPickItem>(
-    valuesToDisplay: T[],
-    placeHolder: string,
-    canPickMany: boolean,
-    ignoreFocusOut: boolean,
-    matchOnDescription: boolean = true
+	valuesToDisplay: T[],
+	placeHolder: string,
+	canPickMany: boolean,
+	ignoreFocusOut: boolean,
+	matchOnDescription: boolean = true
 ): Thenable<T | undefined> => {
-    return vscode.window.showQuickPick(valuesToDisplay, {
-        placeHolder: placeHolder,
-        canPickMany: canPickMany,
-        ignoreFocusOut: ignoreFocusOut,
-        matchOnDescription: matchOnDescription,
-    });
+	return vscode.window.showQuickPick(valuesToDisplay, {
+		placeHolder: placeHolder,
+		canPickMany: canPickMany,
+		ignoreFocusOut: ignoreFocusOut,
+		matchOnDescription: matchOnDescription,
+	});
 };

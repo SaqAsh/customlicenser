@@ -11,21 +11,6 @@
 	],
 	"activationEvents": [
 		"onStartupFinished",
-		"onCommand:customlicenser.test",
-		"onCommand:customlicenser.addMITLicense",
-		"onCommand:customlicenser.addGPLLicense",
-		"onCommand:customlicenser.addApacheLicense",
-		"onCommand:customlicenser.addBSDLicense",
-		"onCommand:customlicenser.addISCLicense",
-		"onCommand:customlicenser.addMozillaLicense",
-		"onCommand:customlicenser.selectLicense",
-		"onCommand:customlicenser.toggleAutoSave",
-		"onCommand:customlicenser.addYear",
-		"onCommand:customlicenser.addName",
-		"onCommand:customlicenser.selectDefaultLicense",
-		"onCommand:customlicenser.createCustomLicense",
-		"onCommand:customlicenser.editCustomLicense",
-		"onCommand:customlicenser.configureSettings",
 		"onLanguage:javascript",
 		"onLanguage:typescript",
 		"onLanguage:python",
@@ -188,11 +173,6 @@
 						]
 					}
 				},
-				"customlicenser.defaultLicense": {
-					"type": "string",
-					"default": "",
-					"description": "Default license type to use for auto-insertion"
-				},
 				"customlicenser.authorName": {
 					"type": "string",
 					"default": "Your Name",
@@ -258,6 +238,7 @@
 	},
 	"scripts": {
 		"copy-templates": "cp -r src/license-templates dist/",
+		"compile": "npx esbuild src/extension.ts --bundle --format=cjs --platform=node --outfile=dist/extension.js --external:vscode",
 		"build": "npm run compile && npm run copy-templates"
 	},
 	"devDependencies": {

@@ -57,7 +57,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		try {
 			if (licenseManager.isAutoSaveEnabled()) {
 				await licenseManager.enableAutoSave();
-				console.log("CustomLicenser: Auto-save enabled");
 			}
 		} catch (err) {
 			console.warn("CustomLicenser: Failed to enable auto-save:", err);

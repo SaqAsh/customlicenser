@@ -2,7 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { ERROR_MESSAGES, LANGUAGE_PLAINTEXT, UI_MESSAGES } from "../constants";
+import { ERROR_MESSAGES, UI_MESSAGES } from "../constants";
 import { error, info } from "../loggers";
 import { ITemplateService } from "../services/interfaces/ITemplateService";
 import { LicenseTemplate } from "../types";
@@ -11,7 +11,6 @@ import { ITemplateManager } from "./interfaces/ITemplateManager";
 export class TemplateManager implements ITemplateManager {
 	private readonly templateService: ITemplateService;
 	private saveListener?: vscode.Disposable;
-	private currentTemplateName?: string;
 
 	constructor(templateService: ITemplateService) {
 		this.templateService = templateService;
@@ -19,33 +18,6 @@ export class TemplateManager implements ITemplateManager {
 
 	get allCustomTemplates(): LicenseTemplate[] {
 		return this.templateService.allCustomTemplates;
-	}
-
-	async openTemplateEditor(templateName: string): Promise<void> {
-		try {
-			const existingTemplate =
-				this.templateService.allCustomTemplates.find(
-					(template) => template.name === templateName
-				);
-
-			const initialContent = existingTemplate?.content || "";
-
-			const document = await vscode.workspace.openTextDocument({
-				content: initialContent,
-				language: LANGUAGE_PLAINTEXT,
-			});
-
-			await vscode.window.showTextDocument(document);
-		} catch (err) {
-			error(
-				`${ERROR_MESSAGES.FAILED_TO_OPEN_EDITOR} ${
-					err instanceof Error
-						? err.message
-						: "Unknown error occurred"
-				}`,
-				err instanceof Error ? err : undefined
-			);
-		}
 	}
 
 	async handleTemplateCreation(templateName: string): Promise<void> {
@@ -109,7 +81,7 @@ export class TemplateManager implements ITemplateManager {
 		content: string
 	): Promise<string> {
 		const workspaceFolders = vscode.workspace.workspaceFolders;
-		if (!workspaceFolders || workspaceFolders.length === 0) {
+		if (workspaceFolders === undefined || workspaceFolders.length === 0) {
 			throw new Error("No workspace folder found");
 		}
 
@@ -140,7 +112,6 @@ export class TemplateManager implements ITemplateManager {
 		);
 		await vscode.window.showTextDocument(document);
 
-		this.currentTemplateName = templateName;
 		this.saveListener = vscode.workspace.onDidSaveTextDocument(
 			async (savedDocument) => {
 				if (savedDocument.uri.fsPath === licenseFilePath) {
@@ -207,6 +178,5 @@ export class TemplateManager implements ITemplateManager {
 			this.saveListener.dispose();
 			this.saveListener = undefined;
 		}
-		this.currentTemplateName = undefined;
 	}
 }

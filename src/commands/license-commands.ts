@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+
 import { error, info, warn } from "../loggers";
 import { LicenseManager } from "../managers";
 
@@ -44,7 +45,6 @@ export async function addMITLicenseCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
 	try {
-		console.log("Extension: addMITLicense command called");
 		const success = await licenseManager.addLicenseToFile("mit");
 		if (success) {
 			await info("MIT license added successfully");

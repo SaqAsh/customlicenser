@@ -148,10 +148,22 @@ export class LicenseManager implements ILicenseManager {
 				);
 				return false;
 			}
+			const processedTemplate =
+				await this.templateService.processTemplate(template);
+
+			if (processedTemplate.content === "") {
+				error(
+					`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${licenseTypeToUse}`
+				);
+				return false;
+			}
 
 			const language = this.fileService.language;
 			const commentStyle = this.fileService.commentStyle;
-			const licenseService = new LicenseService(language, template);
+			const licenseService = new LicenseService(
+				language,
+				processedTemplate.content
+			);
 			const formattedLicense =
 				commentStyle.type === "line"
 					? licenseService.formatLineLicense()

@@ -3,10 +3,10 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 import {
-	LicenseTemplatePaths,
-	EXTENSION_ID,
-	TEMPLATE_DIRECTORY,
 	ERROR_MESSAGES,
+	EXTENSION_ID,
+	LicenseTemplatePaths,
+	TEMPLATE_DIRECTORY,
 } from "../constants";
 import { error } from "../loggers";
 import { LicenseTemplate, LicenseType } from "../types";
@@ -29,26 +29,52 @@ export class TemplateService implements ITemplateService {
 		this.allTemplates = this.configService.allTemplates;
 	}
 
+	async processTemplate(template: LicenseTemplate): Promise<LicenseTemplate> {
+		if (template.content === undefined) {
+			error(`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${template.name}`);
+			return template;
+		}
+
+		const year = this.configService.getYear();
+		const authorName = this.configService.getAuthorName;
+
+		const processedContent = template.content
+			.replace(/\{\{year\}\}/gi, year) // Added 'i' flag for case-insensitive
+			.replace(/\{\{name\}\}/gi, authorName);
+
+		return {
+			...template,
+			content: processedContent,
+		};
+	}
+
 	get allCustomTemplates(): LicenseTemplate[] {
 		return this.configService.allCustomTemplates;
 	}
 
-	async getTemplate(licenseType: LicenseType): Promise<string | undefined> {
+	async getTemplate(
+		licenseType: LicenseType
+	): Promise<LicenseTemplate | undefined> {
 		const customTemplate = this.allCustomTemplates.find(
 			(template) => template.name === licenseType
 		);
 
 		if (customTemplate) {
-			return customTemplate.content;
+			return customTemplate;
 		}
 
 		const filePath = LicenseTemplatePaths[licenseType];
-		if (!filePath) {
+		if (filePath === undefined) {
 			error(`${ERROR_MESSAGES.NO_TEMPLATE_PATH} ${licenseType}`);
 			return undefined;
 		}
 
-		return await this.readTemplateFromFile(filePath);
+		const content = await this.readTemplateFromFile(filePath);
+
+		return {
+			name: licenseType,
+			content: content ?? "",
+		};
 	}
 
 	private async findTemplateDirectory(): Promise<string | undefined> {
@@ -102,7 +128,8 @@ export class TemplateService implements ITemplateService {
 				return undefined;
 			}
 
-			return await fs.readFile(fullPath, "utf-8");
+			const content = await fs.readFile(fullPath, "utf-8");
+			return content;
 		} catch (err) {
 			error(
 				`${ERROR_MESSAGES.FAILED_TO_READ_TEMPLATE} ${

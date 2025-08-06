@@ -7,8 +7,6 @@ export async function createCustomLicenseCommand(
 	templateManager: TemplateManager
 ): Promise<void> {
 	try {
-		console.log("Extension: createCustomLicense command called");
-
 		const templateName = await vscode.window.showInputBox({
 			prompt: "Enter a name for your custom license template",
 			placeHolder: "My Custom License",
@@ -21,12 +19,7 @@ export async function createCustomLicenseCommand(
 			},
 		});
 
-		console.log(`Extension: Template name received: "${templateName}"`);
-
 		if (templateName) {
-			console.log(
-				"Extension: Calling templateManager.handleTemplateCreation"
-			);
 			await templateManager.handleTemplateCreation(templateName as any);
 		}
 	} catch (err) {
