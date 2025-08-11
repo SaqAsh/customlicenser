@@ -1,139 +1,170 @@
 import * as vscode from "vscode";
 
 import {
-  licensePhrases,
-  skipExtensions,
-  skipLanguages,
-  ERROR_MESSAGES,
+	ERROR_MESSAGES,
+	licensePhrases,
+	skipExtensions,
+	skipLanguages,
 } from "../constants";
-import { error } from "../loggers";
 import { CommentLookup, CommentStyle, FileInfo } from "../types";
 import { IFileService } from "./interfaces";
-
+import { IConfigService } from "./interfaces/IConfigService";
 export class FileService implements IFileService {
-  private get currentEditor(): vscode.TextEditor | undefined {
-    return vscode.window.activeTextEditor;
-  }
+	private readonly configService: IConfigService;
 
-  private get currentDocument(): vscode.TextDocument | undefined {
-    return this.currentEditor?.document;
-  }
+	constructor(configService: IConfigService) {
+		this.configService = configService;
+	}
 
-  private get currentFilePath(): string | undefined {
-    return this.currentDocument?.uri.fsPath;
-  }
+	private get currentEditor(): vscode.TextEditor | undefined {
+		return vscode.window.activeTextEditor;
+	}
 
-  public get language(): string {
-    return this.currentDocument?.languageId || "";
-  }
+	private get currentDocument(): vscode.TextDocument | undefined {
+		return this.currentEditor?.document;
+	}
 
-  public get extension(): string {
-    return this.currentDocument?.fileName.split(".").pop() || "";
-  }
+	private get currentFilePath(): string | undefined {
+		return this.currentDocument?.uri.fsPath;
+	}
 
-  public get fileInfo(): FileInfo {
-    return {
-      fileName: this.currentDocument?.fileName,
-      fileExtension: this.extension,
-      languageID: this.language,
-      filePath: this.currentFilePath,
-      uri: this.currentDocument?.uri,
-    };
-  }
+	public get language(): string {
+		return this.currentDocument?.languageId || "";
+	}
 
-  public get commentStyle(): CommentStyle {
-    return this.language in CommentLookup
-      ? CommentLookup[this.language as keyof typeof CommentLookup]
-      : { type: "line" };
-  }
+	public get extension(): string {
+		return this.currentDocument?.fileName.split(".").pop() || "";
+	}
 
-  public shouldProcessFile(): boolean {
-    if (skipLanguages.has(this.language)) {
-      return false;
-    }
+	public get fileInfo(): FileInfo {
+		return {
+			fileName: this.currentDocument?.fileName,
+			fileExtension: this.extension,
+			languageID: this.language,
+			filePath: this.currentFilePath,
+			uri: this.currentDocument?.uri,
+		};
+	}
 
-    const ext = this.currentFilePath?.split(".").pop();
-    return ext ? !skipExtensions.has(ext) : true;
-  }
+	public get commentStyle(): CommentStyle {
+		return this.language in CommentLookup
+			? CommentLookup[this.language as keyof typeof CommentLookup]
+			: { type: "line" };
+	}
 
-  public async insertIntoFile(license: string): Promise<boolean> {
-    try {
-      if (
-        !this.currentEditor?.document ||
-        !this.currentDocument ||
-        this.currentEditor.document?.isClosed
-      ) {
-        return false;
-      }
+	public shouldProcessFile(): boolean {
+		if (skipLanguages.has(this.language)) {
+			return false;
+		}
 
-      const editPromise = Promise.resolve(
-        this.currentEditor.edit((editBuilder) => {
-          editBuilder.insert(new vscode.Position(0, 0), license + "\n\n");
-        }),
-      );
+		const ext = this.currentFilePath?.split(".").pop();
+		return ext ? !skipExtensions.has(ext) : true;
+	}
 
-      const [edit, editError] = await tryCatch(editPromise);
+	public async insertIntoFile(
+		license: string
+	): Promise<Result<boolean, Error>> {
+		if (
+			!this.currentEditor?.document ||
+			!this.currentDocument ||
+			this.currentEditor.document?.isClosed
+		) {
+			return [null, new Error("No active editor or document is closed")];
+		}
 
-      if (edit === false) {
-        return false;
-      }
+		const editPromise = Promise.resolve(
+			this.currentEditor.edit((editBuilder) => {
+				editBuilder.insert(new vscode.Position(0, 0), license + "\n\n");
+			})
+		);
 
-      const saved = await this.currentDocument.save();
+		const savePromise = Promise.resolve(this.currentDocument.save());
 
-      if (!saved) {
-        error(ERROR_MESSAGES.FAILED_TO_SAVE_DOCUMENT);
-        return false;
-      }
+		const [edit, editError] = await tryCatch(editPromise);
 
-      return saved;
-    } catch (err) {
-      error(
-        `${ERROR_MESSAGES.ERROR_INSERTING_LICENSE} ${err instanceof Error ? err.message : "Unknown error occurred"
-        }`,
-        err instanceof Error ? err : undefined,
-      );
-      return false;
-    }
-  }
+		if (editError) {
+			return [null, editError];
+		}
 
-  public async hasTypo(): Promise<boolean> {
-    try {
-      const content = this.currentDocument?.getText();
-      if (content === undefined) {
-        return false;
-      }
+		if (edit === false) {
+			return [null, new Error("Failed to edit document")];
+		}
 
-      const licenseRegex = new RegExp(licensePhrases.join("|"), "i");
-      const hasLicense = licenseRegex.test(content);
+		const [saved, saveError] = await tryCatch(savePromise);
 
-      return hasLicense;
-    } catch (err) {
-      error(
-        `${ERROR_MESSAGES.ERROR_CHECKING_LICENSE} ${err instanceof Error ? err.message : "Unknown error occurred"
-        }`,
-        err instanceof Error ? err : undefined,
-      );
-      return false;
-    }
-  }
-  public async hasLicense(): Promise<boolean> {
-    try {
-      const content = this.currentDocument?.getText();
-      if (content === undefined) {
-        return false;
-      }
+		if (saveError) {
+			return [null, saveError];
+		}
 
-      const licenseRegex = new RegExp(licensePhrases.join("|"), "i");
-      const hasLicense = licenseRegex.test(content);
+		if (!saved) {
+			return [null, new Error(ERROR_MESSAGES.FAILED_TO_SAVE_DOCUMENT)];
+		}
 
-      return hasLicense;
-    } catch (err) {
-      error(
-        `${ERROR_MESSAGES.ERROR_CHECKING_LICENSE} ${err instanceof Error ? err.message : "Unknown error occurred"
-        }`,
-        err instanceof Error ? err : undefined,
-      );
-      return false;
-    }
-  }
+		return [saved, null];
+	}
+
+	public async hasTypo(): Promise<Result<boolean, Error>> {
+		const contentPromise = Promise.resolve(this.currentDocument?.getText());
+		const [content, contentError] = await tryCatch(contentPromise);
+		const [hasLicense, hasLicenseError] = await this.hasLicense();
+
+		switch (true) {
+			case hasLicenseError !== null:
+				return [null, hasLicenseError];
+			case hasLicense === false:
+				return [false, null];
+			case !content:
+				return [
+					null,
+					contentError || new Error("Content is undefined"),
+				];
+		}
+
+		const extractedLicense = this.extractLicense(content);
+		const defaultLicense = this.configService.defaultLicense;
+		const defaultLicenseContent = defaultLicense.content;
+		const hasTypo =
+			extractedLicense.trim() !== defaultLicenseContent.trim();
+
+		return [hasTypo, null];
+	}
+
+	public async hasLicense(): Promise<Result<boolean, Error>> {
+		const contentPromise = Promise.resolve(this.currentDocument?.getText());
+		const [content, contentError] = await tryCatch(contentPromise);
+
+		if (contentError || content === undefined) {
+			return [null, contentError || new Error("Content is undefined")];
+		}
+
+		const licenseRegex = new RegExp(licensePhrases.join("|"), "i");
+		const hasLicense = licenseRegex.test(content);
+
+		return [hasLicense, null];
+	}
+
+	public extractLicense(content: string): string {
+		let i = 0;
+		const len = content.length;
+		let licenseBlock = "";
+
+		while (i < len) {
+			if (content[i] === "/" && content[i + 1] === "*") {
+				let end = i + 2;
+				while (
+					end < len &&
+					!(content[end] === "*" && content[end + 1] === "/")
+				) {
+					end++;
+				}
+				if (end < len) {
+					licenseBlock = content.slice(i, end + 2);
+					break;
+				}
+			}
+			i++;
+		}
+
+		return licenseBlock;
+	}
 }

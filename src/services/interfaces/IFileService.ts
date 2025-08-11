@@ -8,6 +8,7 @@ export interface IFileService {
 	readonly commentStyle: CommentStyle;
 
 	shouldProcessFile(): boolean;
-	insertIntoFile(license: string): Promise<boolean>;
-	hasLicense(): Promise<boolean>;
+	insertIntoFile(license: string): Promise<Result<boolean, Error>>;
+	hasLicense(): Promise<Result<boolean, Error>>;
+	extractLicense(content: string): string;
 }
