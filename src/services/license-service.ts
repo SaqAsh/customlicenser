@@ -19,15 +19,11 @@ export class LicenseService implements ILicenseService {
 			return this.blockPrepend(lines[0], true, true);
 		}
 
-		const firstLine = this.blockPrepend(lines[0], true, false);
-		const body = this.blockBodyFormat(lines.slice(1, lines.length - 1));
-		const lastLine = this.blockPrepend(
-			lines[lines.length - 1],
-			false,
-			true
-		);
-
-		return [firstLine, body, lastLine].join("\n");
+		return [
+			this.blockPrepend(lines[0], true, false),
+			this.blockBodyFormat(lines.slice(1, lines.length - 1)),
+			this.blockPrepend(lines[lines.length - 1], false, true),
+		].join("\n");
 	}
 
 	public formatLineLicense(): string {

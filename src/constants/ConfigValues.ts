@@ -17,7 +17,7 @@ export const DEFAULT_VALUES = {
 	TEMPLATES: [] as LicenseTemplate[],
 	YEAR: new Date().getFullYear().toString(),
 	DEFAULT_LICENSE: {
-		name: "" as LicenseType,
+		name: "" as LicenseType, // TODO: Fix type safety - LicenseType should allow custom license names
 		content: "",
 	} as LicenseTemplate,
 	TOGGLE_ON_SAVE: false,

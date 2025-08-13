@@ -10,7 +10,11 @@ export interface ITemplateService {
 	createCustomTemplate(name: string, content: string): Promise<void>;
 	updateCustomTemplate(name: string, content: string): Promise<void>;
 	deleteCustomTemplate(name: string): Promise<void>;
-	processTemplate(template: LicenseTemplate): Promise<LicenseTemplate>;
+	processTemplate(
+		template: LicenseTemplate
+	): Promise<Result<LicenseTemplate, Error>>;
 
-	getTemplate(licenseType: LicenseType): Promise<LicenseTemplate | undefined>;
+	getTemplate(
+		licenseType: LicenseType
+	): Promise<Result<LicenseTemplate, Error>>;
 }

@@ -37,23 +37,25 @@ export class TemplateService implements ITemplateService {
 		this.allTemplates = this.configService.allTemplates;
 	}
 
-	async processTemplate(template: LicenseTemplate): Promise<LicenseTemplate> {
+	async processTemplate(
+		template: LicenseTemplate
+	): Promise<Result<LicenseTemplate, Error>> {
 		if (template.content === undefined) {
-			error(`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${template.name}`);
-			return template;
+			const err = new Error(
+				`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${template.name}`
+			);
+
+			return [null, err];
 		}
 
-		const year = this.configService.year;
-		const authorName = this.configService.authorName;
-
-		const processedContent = template.content
-			.replace(/\{\{year\}\}/gi, year) // Added 'i' flag for case-insensitive
-			.replace(/\{\{name\}\}/gi, authorName);
-
-		return {
+		const processedTemplate = {
 			...template,
-			content: processedContent,
+			content: template.content
+				.replace(/\{\{year\}\}/gi, this.configService.year)
+				.replace(/\{\{name\}\}/gi, this.configService.authorName),
 		};
+
+		return [processedTemplate, null];
 	}
 
 	get allCustomTemplates(): LicenseTemplate[] {
@@ -62,25 +64,23 @@ export class TemplateService implements ITemplateService {
 
 	async getTemplate(
 		licenseType: LicenseType
-	): Promise<LicenseTemplate | undefined> {
-		const customTemplate = this.allCustomTemplates.find(
-			(template) => template.name === licenseType
-		);
-
-		if (customTemplate) {
-			return customTemplate;
-		}
-
+	): Promise<Result<LicenseTemplate, Error>> {
 		const templateContent = this.licenseTemplates[licenseType];
 		if (templateContent === undefined) {
-			error(`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${licenseType}`);
-			return undefined;
+			const err = new Error(
+				`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${licenseType}`
+			);
+
+			return [null, err];
 		}
 
-		return {
-			name: licenseType,
-			content: templateContent,
-		};
+		return [
+			{
+				name: licenseType,
+				content: templateContent,
+			},
+			null,
+		];
 	}
 
 	public async createCustomTemplate(
