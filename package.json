@@ -243,9 +243,8 @@
 		}
 	},
 	"scripts": {
-		"copy-templates": "cp -r src/license-templates dist/",
 		"compile": "npx esbuild src/extension.ts --bundle --format=cjs --platform=node --outfile=dist/extension.js --external:vscode",
-		"build": "npm run compile && npm run copy-templates"
+		"build": "npm run compile"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",

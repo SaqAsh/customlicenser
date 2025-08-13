@@ -16,6 +16,7 @@ import {
 	selectLicenseCommand,
 	toggleAutoSaveCommand,
 } from "./commands";
+import "./handlers/try-catch";
 import { error } from "./loggers";
 import { LicenseManager, TemplateManager } from "./managers";
 import { ConfigService, FileService, TemplateService } from "./services";
@@ -27,7 +28,7 @@ let templateManager: TemplateManager;
 export async function activate(context: vscode.ExtensionContext) {
 	try {
 		const configService = new ConfigService();
-		const fileService = new FileService();
+		const fileService = new FileService(configService);
 
 		const defaultTemplate: LicenseTemplate = {
 			name: "mit",
