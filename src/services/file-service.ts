@@ -103,29 +103,21 @@ export class FileService implements IFileService {
         return [saved, null];
     }
 
-    public async hasTypo(): Promise<Result<boolean, Error>> {
-        const contentPromise = Promise.resolve(this.currentDocument?.getText());
-        const [content, contentError] = await tryCatch(contentPromise);
-        const [hasLicense, hasLicenseError] = await this.hasLicense();
-
-        switch (true) {
-            case hasLicenseError !== null:
-                return [null, hasLicenseError];
-            case hasLicense === false:
-                return [false, null];
-            case !content:
-                return [
-                    null,
-                    contentError || new Error("Content is undefined"),
-                ];
+    public async hasTypo(
+        extractedLicense: string,
+        defaultTemplate: string
+    ): Promise<Result<boolean, Error>> {
+        if (!extractedLicense || !defaultTemplate) {
+            return [false, null];
         }
 
-        const extractedLicense = this.extractLicense(content);
-        const defaultLicense = this.configService.defaultLicense;
-        const defaultLicenseContent = defaultLicense.content;
-        const hasTypo =
-            extractedLicense.trim() !== defaultLicenseContent.trim();
+        // Normalize whitespace and compare
+        const normalizedExtracted = extractedLicense
+            .trim()
+            .replace(/\s+/g, " ");
+        const normalizedDefault = defaultTemplate.trim().replace(/\s+/g, " ");
 
+        const hasTypo = normalizedExtracted !== normalizedDefault;
         return [hasTypo, null];
     }
 
