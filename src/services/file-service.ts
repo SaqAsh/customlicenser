@@ -111,7 +111,6 @@ export class FileService implements IFileService {
             return [false, null];
         }
 
-        // Normalize whitespace and compare
         const normalizedExtracted = extractedLicense
             .trim()
             .replace(/\s+/g, " ");
