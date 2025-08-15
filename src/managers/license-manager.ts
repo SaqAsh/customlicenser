@@ -92,9 +92,21 @@ export class LicenseManager implements ILicenseManager {
 		const [hasLicense, hasLicenseError] =
 			await this.fileService.hasLicense();
 
-		if (hasLicense === true || hasLicenseError) {
+		if (hasLicenseError) {
 			this.isProcessingAutoSave = false;
 			return;
+		}
+		if (hasLicense) {
+			this.isProcessingAutoSave = false;
+			const [hasTypo, hasTypoError] = await this.fileService.hasTypo(
+				this.fileService.extractLicense(document.getText()),
+				this.defaultLicense.content
+			);
+
+			if (hasTypoError) {
+				this.isProcessingAutoSave = false;
+				return;
+			}
 		}
 
 		const [success, addLicenseError] = await this.addLicenseToFile();
