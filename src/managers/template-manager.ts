@@ -120,9 +120,10 @@ export class TemplateManager implements ITemplateManager {
 							licenseFilePath,
 							"utf-8"
 						);
-						const cleanContent = content
-							.replace(/^# Enter your content below:\n\n/, "")
-							.trim();
+						const cleanContent = content.replace(
+							/^# Enter your content below:\n\n/,
+							""
+						);
 
 						if (!cleanContent) {
 							error("License template content cannot be empty");

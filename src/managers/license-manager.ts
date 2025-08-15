@@ -1,187 +1,204 @@
 import * as vscode from "vscode";
 
+import { Disposable, TextDocument } from "vscode";
 import { ERROR_MESSAGES, STANDARD_LICENSES, UI_MESSAGES } from "../constants";
 import { error, info } from "../loggers";
 import { LicenseService } from "../services";
 import {
-  IConfigService,
-  IFileService,
-  ITemplateService,
+	IConfigService,
+	IFileService,
+	ITemplateService,
 } from "../services/interfaces";
 import { LicenseTemplate, LicenseType } from "../types";
 import { ILicenseManager } from "./interfaces";
 
 export class LicenseManager implements ILicenseManager {
-  private readonly configurationService: IConfigService;
-  private readonly templateService: ITemplateService;
-  private readonly fileService: IFileService;
-  private autoSaveDisposable: vscode.Disposable | undefined;
-  private autoSaveDebounceTimer: NodeJS.Timeout | undefined;
-  private isProcessingAutoSave: boolean = false;
+	private readonly configurationService: IConfigService;
+	private readonly templateService: ITemplateService;
+	private readonly fileService: IFileService;
+	private autoSaveDisposable: Disposable | undefined;
+	private autoSaveDebounceTimer: NodeJS.Timeout | undefined;
+	private isProcessingAutoSave: boolean = false;
 
-  constructor(
-    configurationService: IConfigService,
-    templateService: ITemplateService,
-    fileService: IFileService,
-  ) {
-    this.configurationService = configurationService;
-    this.templateService = templateService;
-    this.fileService = fileService;
-  }
+	constructor(
+		configurationService: IConfigService,
+		templateService: ITemplateService,
+		fileService: IFileService
+	) {
+		this.configurationService = configurationService;
+		this.templateService = templateService;
+		this.fileService = fileService;
+	}
 
-  start(): Promise<void> {
-    return Promise.resolve();
-  }
+	start(): Promise<void> {
+		return Promise.resolve();
+	}
 
-  stop(): Promise<void> {
-    if (this.autoSaveDisposable) {
-      this.autoSaveDisposable.dispose();
-      this.autoSaveDisposable = undefined;
-    }
-    if (this.autoSaveDebounceTimer) {
-      clearTimeout(this.autoSaveDebounceTimer);
-      this.autoSaveDebounceTimer = undefined;
-    }
-    return Promise.resolve();
-  }
+	stop(): Promise<void> {
+		if (this.autoSaveDisposable) {
+			this.autoSaveDisposable.dispose();
+			this.autoSaveDisposable = undefined;
+		}
+		if (this.autoSaveDebounceTimer) {
+			clearTimeout(this.autoSaveDebounceTimer);
+			this.autoSaveDebounceTimer = undefined;
+		}
+		return Promise.resolve();
+	}
 
-  enableAutoSave(): Promise<void> {
-    try {
-      if (this.autoSaveDisposable) {
-        this.autoSaveDisposable.dispose();
-      }
+	async enableAutoSave(): Promise<Result<void, Error>> {
+		if (this.autoSaveDisposable !== undefined) {
+			this.autoSaveDisposable.dispose();
+		}
 
-      this.autoSaveDisposable = vscode.workspace.onDidSaveTextDocument(
-        async (document) => {
-          if (this.isProcessingAutoSave) {
-            return;
-          }
+		this.autoSaveDisposable = vscode.workspace.onDidSaveTextDocument(
+			async (document) => {
+				if (this.isProcessingAutoSave) {
+					return;
+				}
 
-          if (this.autoSaveDebounceTimer) {
-            clearTimeout(this.autoSaveDebounceTimer);
-          }
+				if (this.autoSaveDebounceTimer) {
+					clearTimeout(this.autoSaveDebounceTimer);
+				}
 
-          if (
-            !this.isAutoSaveEnabled() ||
-            !this.fileService.shouldProcessFile()
-          ) {
-            return;
-          }
+				if (
+					!this.isAutoSaveEnabled ||
+					!this.fileService.shouldProcessFile()
+				) {
+					return;
+				}
 
-          this.autoSaveDebounceTimer = setTimeout(async () => {
-            try {
-              this.isProcessingAutoSave = true;
+				this.autoSaveDebounceTimer = setTimeout(
+					() => this.processAutoSave(document),
+					100
+				);
+			}
+		);
 
-              const hasLicense = await this.fileService.hasLicense();
-              if (hasLicense) {
-                return;
-              }
+		const [updateResult, updateError] = await tryCatch(
+			this.configurationService.updateAutoAddEnabled(true)
+		);
 
-              const success = await this.addLicenseToFile();
-              if (success) {
-                info(`${UI_MESSAGES.AUTO_ADDED_LICENSE} ${document.fileName}`);
-              }
-            } catch (err) {
-              error(
-                `${ERROR_MESSAGES.AUTO_SAVE_FAILED} ${document.fileName}: ${
-                  err instanceof Error ? err.message : "Unknown error occurred"
-                }`,
-                err instanceof Error ? err : undefined,
-              );
-            } finally {
-              this.isProcessingAutoSave = false;
-            }
-          }, 100);
-        },
-      );
+		if (updateError) {
+			return [null, updateError];
+		}
 
-      return this.configurationService.updateAutoAddEnabled(true);
-    } catch (err) {
-      console.error("LicenseManager: Failed to enable auto-save:", err);
-      return Promise.reject(err);
-    }
-  }
+		return [updateResult, null];
+	}
 
-  disableAutoSave(): Promise<void> {
-    if (this.autoSaveDisposable) {
-      this.autoSaveDisposable.dispose();
-      this.autoSaveDisposable = undefined;
-    }
-    if (this.autoSaveDebounceTimer) {
-      clearTimeout(this.autoSaveDebounceTimer);
-      this.autoSaveDebounceTimer = undefined;
-    }
+	private async processAutoSave(document: TextDocument): Promise<void> {
+		this.isProcessingAutoSave = true;
 
-    this.isProcessingAutoSave = false;
+		const [hasLicense, hasLicenseError] =
+			await this.fileService.hasLicense();
 
-    return this.configurationService.updateAutoAddEnabled(false);
-  }
+		if (hasLicenseError) {
+			this.isProcessingAutoSave = false;
+			return;
+		}
+		if (hasLicense) {
+			this.isProcessingAutoSave = false;
+			const [hasTypo, hasTypoError] = await this.fileService.hasTypo(
+				this.fileService.extractLicense(document.getText()),
+				this.defaultLicense.content
+			);
 
-  async addLicenseToFile(licenseType?: LicenseType): Promise<boolean> {
-    try {
-      const licenseTypeToUse =
-        licenseType || this.configurationService.defaultLicense.name;
+			if (hasTypoError) {
+				this.isProcessingAutoSave = false;
+				return;
+			}
+		}
 
-      if (!licenseTypeToUse) {
-        error(ERROR_MESSAGES.NO_LICENSE_TYPE);
-        return false;
-      }
+		const [success, addLicenseError] = await this.addLicenseToFile();
 
-      const template = await this.templateService.getTemplate(licenseTypeToUse);
+		if (addLicenseError) {
+			error(addLicenseError.message);
+			this.isProcessingAutoSave = false;
+			return;
+		}
 
-      if (template === undefined) {
-        error(`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${licenseTypeToUse}`);
-        return false;
-      }
-      const processedTemplate =
-        await this.templateService.processTemplate(template);
+		if (success === true) {
+			const msg = `${UI_MESSAGES.AUTO_ADDED_LICENSE} ${document.fileName}`;
+			info(msg);
+		}
 
-      if (processedTemplate.content === "") {
-        error(`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${licenseTypeToUse}`);
-        return false;
-      }
+		this.isProcessingAutoSave = false;
+	}
 
-      const language = this.fileService.language;
-      const commentStyle = this.fileService.commentStyle;
-      const licenseService = new LicenseService(
-        language,
-        processedTemplate.content,
-      );
-      const formattedLicense =
-        commentStyle.type === "line"
-          ? licenseService.formatLineLicense()
-          : licenseService.formatBlockLicense();
+	public disableAutoSave(): Promise<void> {
+		if (this.autoSaveDisposable) {
+			this.autoSaveDisposable.dispose();
+			this.autoSaveDisposable = undefined;
+		}
+		if (this.autoSaveDebounceTimer) {
+			clearTimeout(this.autoSaveDebounceTimer);
+			this.autoSaveDebounceTimer = undefined;
+		}
 
-      const result = await this.fileService.insertIntoFile(formattedLicense);
+		this.isProcessingAutoSave = false;
 
-      return result;
-    } catch (err) {
-      error(
-        `${ERROR_MESSAGES.ERROR_IN_ADD_LICENSE} ${
-          err instanceof Error ? err.message : "Unknown error occurred"
-        }`,
-        err instanceof Error ? err : undefined,
-      );
-      return false;
-    }
-  }
+		return this.configurationService.updateAutoAddEnabled(false);
+	}
 
-  async getAvailableLicenses(): Promise<string[]> {
-    const customTemplates = this.templateService.allCustomTemplates;
-    const customLicenseNames = customTemplates.map((template) => template.name);
+	public async addLicenseToFile(
+		licenseType?: LicenseType
+	): Promise<Result<boolean, Error>> {
+		const licenseTypeToUse =
+			licenseType || this.configurationService.defaultLicense.name;
 
-    return [...STANDARD_LICENSES, ...customLicenseNames];
-  }
+		if (licenseTypeToUse === undefined) {
+			return [null, new Error(ERROR_MESSAGES.NO_LICENSE_TYPE)];
+		}
 
-  getDefaultLicense(): LicenseTemplate {
-    return this.configurationService.defaultLicense;
-  }
+		const [template, hasTemplateError] =
+			await this.templateService.getTemplate(licenseTypeToUse);
 
-  isAutoSaveEnabled(): boolean {
-    return this.configurationService.isAutoAddEnabled;
-  }
+		if (hasTemplateError) {
+			return [null, hasTemplateError];
+		}
 
-  isAutoCorrectEnabled(): boolean {
-    return this.configurationService.isAutoCorrectEnabled;
-  }
+		const [processedTemplate, hasProcessedTemplateError] =
+			await this.templateService.processTemplate(template);
+
+		if (hasProcessedTemplateError) {
+			return [null, hasProcessedTemplateError];
+		}
+
+		const licenseService = new LicenseService(
+			this.fileService.language,
+			processedTemplate.content
+		);
+
+		const [result, resultError] = await this.fileService.insertIntoFile(
+			this.fileService.commentStyle.type === "line"
+				? licenseService.formatLineLicense()
+				: licenseService.formatBlockLicense()
+		);
+
+		if (resultError) {
+			return [null, resultError];
+		}
+
+		return [result, null];
+	}
+
+	async availableLicenses(): Promise<Result<string[], Error>> {
+		const customTemplates = this.templateService.allCustomTemplates;
+		const customLicenseNames = customTemplates.map(
+			(template) => template.name
+		);
+		return [[...STANDARD_LICENSES, ...customLicenseNames], null];
+	}
+
+	public get defaultLicense(): LicenseTemplate {
+		return this.configurationService.defaultLicense;
+	}
+
+	public get isAutoSaveEnabled(): boolean {
+		return this.configurationService.isAutoAddEnabled;
+	}
+
+	public get isAutoCorrectEnabled(): boolean {
+		return this.configurationService.isAutoCorrectEnabled;
+	}
 }
