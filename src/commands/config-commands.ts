@@ -25,15 +25,7 @@ export async function addYearCommand(
 	const [year, yearError] = await tryCatch(yearPromise);
 
 	if (yearError) {
-		const e =
-			yearError instanceof Error
-				? yearError.message
-				: "Unknown error occurred";
-
-		error(
-			`Failed to update year: ${e}`,
-			yearError instanceof Error ? yearError : undefined
-		);
+		error(`Failed to update year: ${yearError.message}`);
 	}
 	if (year) {
 		await configService.updateYear(year);
