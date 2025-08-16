@@ -68,6 +68,11 @@
 				"category": "CustomLicenser"
 			},
 			{
+				"command": "customlicenser.toggleAutoCorrect",
+				"title": "Toggle Auto-Correct On Save",
+				"category": "CustomLicenser"
+			},
+			{
 				"command": "customlicenser.addYear",
 				"title": "Add Year",
 				"category": "CustomLicenser"
@@ -198,6 +203,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Enable auto-add license on save"
+				},
+				"customlicenser.autoCorrect": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable auto-correct license on save"
 				},
 				"customlicenser.customTemplates": {
 					"type": "array",

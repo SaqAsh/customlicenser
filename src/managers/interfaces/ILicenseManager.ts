@@ -8,6 +8,8 @@ export interface ILicenseManager {
 	disableAutoSave(): Promise<void>;
 	get isAutoSaveEnabled(): boolean;
 
+	enableAutoCorrect(): Promise<Result<void, Error>>;
+	disableAutoCorrect(): Promise<Result<void, Error>>;
 	get isAutoCorrectEnabled(): boolean;
 
 	addLicenseToFile(

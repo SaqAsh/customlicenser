@@ -1,10 +1,10 @@
-import { LicenseTemplate, LicenseType } from "../types";
+import { LicenseTemplate } from "../types";
 
 export const CONFIG_SECTION = "customlicenser";
 
 export const CONFIG_KEYS = {
 	AUTHOR_NAME: "authorName",
-	TEMPLATES: "templates",
+	TEMPLATES: "customTemplates", // Changed to match package.json
 	YEAR: "year",
 	DEFAULT_LICENSE: "defaultLicense",
 	TOGGLE_ON_SAVE: "toggleOnSave",
@@ -17,10 +17,11 @@ export const DEFAULT_VALUES = {
 	TEMPLATES: [] as LicenseTemplate[],
 	YEAR: new Date().getFullYear().toString(),
 	DEFAULT_LICENSE: {
-		name: "" as LicenseType, // TODO: Fix type safety - LicenseType should allow custom license names
+		name: "mit",
 		content: "",
 	} as LicenseTemplate,
 	TOGGLE_ON_SAVE: false,
+	AUTO_CORRECT: false,
 	CUSTOM_TEMPLATES: [] as LicenseTemplate[],
 } as const;
 

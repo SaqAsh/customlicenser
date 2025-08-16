@@ -6,8 +6,8 @@ import { ConfigService } from "../services";
 export async function addYearCommand(
 	configService: ConfigService
 ): Promise<void> {
-	try {
-		const year = await vscode.window.showInputBox({
+	const yearPromise = Promise.resolve(
+		vscode.window.showInputBox({
 			prompt: "Enter the year for license headers",
 			placeHolder: new Date().getFullYear().toString(),
 			value: new Date().getFullYear().toString(),
@@ -19,27 +19,33 @@ export async function addYearCommand(
 				}
 				return null;
 			},
-		});
+		})
+	);
 
-		if (year) {
-			await configService.updateYear(year);
-			await info(`Year updated to: ${year}`);
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to update year: ${errorMessage}`,
-			err instanceof Error ? err : undefined
+	const [year, yearError] = await tryCatch(yearPromise);
+
+	if (yearError) {
+		const e =
+			yearError instanceof Error
+				? yearError.message
+				: "Unknown error occurred";
+
+		error(
+			`Failed to update year: ${e}`,
+			yearError instanceof Error ? yearError : undefined
 		);
+	}
+	if (year) {
+		await configService.updateYear(year);
+		await info(`Year updated to: ${year}`);
 	}
 }
 
 export async function addNameCommand(
 	configService: ConfigService
 ): Promise<void> {
-	try {
-		const name = await vscode.window.showInputBox({
+	const namePromise = Promise.resolve(
+		vscode.window.showInputBox({
 			prompt: "Enter your name for license headers",
 			placeHolder: "Your Name",
 			ignoreFocusOut: true,
@@ -49,39 +55,76 @@ export async function addNameCommand(
 				}
 				return null;
 			},
-		});
+		})
+	);
 
-		if (name) {
-			await configService.updateAuthorName(name);
-			await info(`Author name set to: ${name}`);
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to update author name: ${errorMessage}`,
-			err instanceof Error ? err : undefined
+	const [name, nameError] = await tryCatch(namePromise);
+
+	if (nameError) {
+		const e =
+			nameError instanceof Error
+				? nameError.message
+				: "Unknown error occurred";
+
+		error(
+			`Failed to update name: ${e}`,
+			nameError instanceof Error ? nameError : undefined
 		);
+	}
+
+	if (name) {
+		await configService.updateAuthorName(name);
+		await info(`Author name set to: ${name}`);
 	}
 }
 
 export async function toggleAutoSaveCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
-	try {
-		if (licenseManager.isAutoSaveEnabled()) {
-			await licenseManager.disableAutoSave();
-			await info("Auto-save disabled");
-		} else {
-			await licenseManager.enableAutoSave();
-			await info("Auto-save enabled");
+	if (licenseManager.isAutoSaveEnabled) {
+		await licenseManager.disableAutoSave();
+		info("Auto-save disabled");
+	} else {
+		const [_, enableError] = await licenseManager.enableAutoSave();
+
+		if (enableError) {
+			error(
+				`Failed to enable auto-save: ${enableError.message}`,
+				enableError
+			);
+			return;
 		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to toggle auto-save: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+
+		info("Auto-save enabled");
+	}
+}
+
+export async function toggleAutoCorrectCommand(
+	licenseManager: LicenseManager
+): Promise<void> {
+	if (licenseManager.isAutoCorrectEnabled) {
+		const [_, disableError] = await licenseManager.disableAutoCorrect();
+
+		if (disableError) {
+			error(
+				`Failed to disable auto-correct: ${disableError.message}`,
+				disableError
+			);
+			return;
+		}
+
+		info("Auto-correct disabled");
+	} else {
+		const [_, enableError] = await licenseManager.enableAutoCorrect();
+
+		if (enableError) {
+			error(
+				`Failed to enable auto-correct: ${enableError.message}`,
+				enableError
+			);
+			return;
+		}
+
+		info("Auto-correct enabled");
 	}
 }
