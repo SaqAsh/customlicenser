@@ -1,13 +1,13 @@
-import * as vscode from "vscode";
 import { error, info } from "../loggers";
 import { LicenseManager } from "../managers";
 import { ConfigService } from "../services";
+import { displayInputBox } from "../ui";
 
 export async function addYearCommand(
 	configService: ConfigService
 ): Promise<void> {
 	const yearPromise = Promise.resolve(
-		vscode.window.showInputBox({
+		displayInputBox({
 			prompt: "Enter the year for license headers",
 			placeHolder: new Date().getFullYear().toString(),
 			value: new Date().getFullYear().toString(),
@@ -45,7 +45,7 @@ export async function addNameCommand(
 	configService: ConfigService
 ): Promise<void> {
 	const namePromise = Promise.resolve(
-		vscode.window.showInputBox({
+		displayInputBox({
 			prompt: "Enter your name for license headers",
 			placeHolder: "Your Name",
 			ignoreFocusOut: true,
@@ -58,18 +58,10 @@ export async function addNameCommand(
 		})
 	);
 
-	const [name, nameError] = await tryCatch(namePromise);
+	const [name, err] = await tryCatch(namePromise);
 
-	if (nameError) {
-		const e =
-			nameError instanceof Error
-				? nameError.message
-				: "Unknown error occurred";
-
-		error(
-			`Failed to update name: ${e}`,
-			nameError instanceof Error ? nameError : undefined
-		);
+	if (err) {
+		error(`Failed to update name: ${err.message}`, err);
 	}
 
 	if (name) {
@@ -103,13 +95,10 @@ export async function toggleAutoCorrectCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
 	if (licenseManager.isAutoCorrectEnabled) {
-		const [_, disableError] = await licenseManager.disableAutoCorrect();
+		const [_, err] = await licenseManager.disableAutoCorrect();
 
-		if (disableError) {
-			error(
-				`Failed to disable auto-correct: ${disableError.message}`,
-				disableError
-			);
+		if (err) {
+			error(`Failed to disable auto-correct: ${err.message}`, err);
 			return;
 		}
 
