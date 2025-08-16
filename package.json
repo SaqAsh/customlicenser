@@ -6,7 +6,7 @@
 	},
 	"displayName": "CustomLicenser",
 	"description": "A flexible licensing tool that lets you choose from standard licenses or create your own custom terms—perfect for developers, creators, and teams who need control over how their work is shared and used.",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"publisher": "saqash-dev",
 	"icon": "icon.png",
 	"engines": {
