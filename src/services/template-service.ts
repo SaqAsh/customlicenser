@@ -1,15 +1,14 @@
-import * as fs from "fs/promises";
-import * as path from "path";
-import * as vscode from "vscode";
-
 import {
+	APACHE_TEMPLATE,
+	BSD_TEMPLATE,
 	ERROR_MESSAGES,
-	EXTENSION_ID,
-	LicenseTemplatePaths,
-	TEMPLATE_DIRECTORY,
+	GPL_TEMPLATE,
+	ISC_TEMPLATE,
+	MIT_TEMPLATE,
+	MOZILLA_TEMPLATE,
 } from "../constants";
 import { error } from "../loggers";
-import { LicenseTemplate, LicenseType } from "../types";
+import { LicenseTemplate, LicenseType, Result } from "../types";
 import { IConfigService, ITemplateService } from "./interfaces";
 
 export class TemplateService implements ITemplateService {
@@ -19,33 +18,59 @@ export class TemplateService implements ITemplateService {
 
 	readonly configService: IConfigService;
 
+	private readonly licenseTemplates: Record<string, string> = {
+		mit: MIT_TEMPLATE,
+		apache: APACHE_TEMPLATE,
+		bsd: BSD_TEMPLATE,
+		gpl: GPL_TEMPLATE,
+		isc: ISC_TEMPLATE,
+		mozilla: MOZILLA_TEMPLATE,
+	};
+
 	constructor(
 		configService: IConfigService,
 		currentTemplate: LicenseTemplate
 	) {
 		this.configService = configService;
 		this.currentTemplate = currentTemplate;
-		this.defaultLicenseTemplate = this.configService.getDefaultLicense;
+		this.defaultLicenseTemplate = this.configService.defaultLicense;
 		this.allTemplates = this.configService.allTemplates;
 	}
 
-	async processTemplate(template: LicenseTemplate): Promise<LicenseTemplate> {
-		if (template.content === undefined) {
-			error(`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${template.name}`);
-			return template;
+	async processTemplate(
+		template: LicenseTemplate
+	): Promise<Result<LicenseTemplate, Error>> {
+		if (template.content === undefined || template.content === "") {
+			const errMsg = `${ERROR_MESSAGES.TEMPLATE_NOT_FOUND}: ${template.name}`;
+			return [null, new Error(errMsg)];
 		}
 
-		const year = this.configService.getYear();
-		const authorName = this.configService.getAuthorName;
+		try {
+			const year = this.configService.year;
+			const authorName = this.configService.authorName || "Your Name";
 
-		const processedContent = template.content
-			.replace(/\{\{year\}\}/gi, year) // Added 'i' flag for case-insensitive
-			.replace(/\{\{name\}\}/gi, authorName);
+			// Check if we have valid replacement values
+			if (!year) {
+				const errMsg = `Missing year configuration: year=${year}`;
+				return [null, new Error(errMsg)];
+			}
 
-		return {
-			...template,
-			content: processedContent,
-		};
+			const processedContent = template.content
+				.replace(/\{\{year\}\}/gi, year)
+				.replace(/\{\{name\}\}/gi, authorName);
+
+			const processedTemplate = {
+				...template,
+				content: processedContent,
+			};
+
+			return [processedTemplate, null];
+		} catch (error) {
+			return [
+				null,
+				error instanceof Error ? error : new Error(String(error)),
+			];
+		}
 	}
 
 	get allCustomTemplates(): LicenseTemplate[] {
@@ -54,101 +79,39 @@ export class TemplateService implements ITemplateService {
 
 	async getTemplate(
 		licenseType: LicenseType
-	): Promise<LicenseTemplate | undefined> {
-		const customTemplate = this.allCustomTemplates.find(
+	): Promise<Result<LicenseTemplate, Error>> {
+		// First check standard templates
+		const templateContent = this.licenseTemplates[licenseType];
+		if (templateContent !== undefined) {
+			return [
+				{
+					name: licenseType,
+					content: templateContent,
+				},
+				null,
+			];
+		}
+
+		// Then check custom templates
+		const customTemplate = this.configService.allCustomTemplates.find(
 			(template) => template.name === licenseType
 		);
-
 		if (customTemplate) {
-			return customTemplate;
+			return [customTemplate, null];
 		}
 
-		const filePath = LicenseTemplatePaths[licenseType];
-		if (filePath === undefined) {
-			error(`${ERROR_MESSAGES.NO_TEMPLATE_PATH} ${licenseType}`);
-			return undefined;
-		}
-
-		const content = await this.readTemplateFromFile(filePath);
-
-		return {
-			name: licenseType,
-			content: content ?? "",
-		};
-	}
-
-	private async findTemplateDirectory(): Promise<string | undefined> {
-		const possiblePaths = [
-			...(vscode.extensions.getExtension(EXTENSION_ID)?.extensionPath
-				? [
-						path.join(
-							vscode.extensions.getExtension(EXTENSION_ID)!
-								.extensionPath,
-							TEMPLATE_DIRECTORY
-						),
-				  ]
-				: []),
-			path.join(process.cwd(), "dist", TEMPLATE_DIRECTORY),
-			path.join(process.cwd(), "src", TEMPLATE_DIRECTORY),
-			path.join(__dirname, "..", TEMPLATE_DIRECTORY),
-			path.join(__dirname, "..", "dist", TEMPLATE_DIRECTORY),
-			path.join(__dirname, "..", "..", TEMPLATE_DIRECTORY),
-			path.join(__dirname, "..", "..", "dist", TEMPLATE_DIRECTORY),
-		];
-
-		for (const possiblePath of possiblePaths) {
-			try {
-				await fs.access(possiblePath);
-				return possiblePath;
-			} catch {
-				continue;
-			}
-		}
-
-		return undefined;
-	}
-
-	private async readTemplateFromFile(
-		filePath: string
-	): Promise<string | undefined> {
-		try {
-			const templateDir = await this.findTemplateDirectory();
-
-			if (!templateDir) {
-				error(ERROR_MESSAGES.TEMPLATE_DIRECTORY_NOT_FOUND);
-				return undefined;
-			}
-
-			const fullPath = path.join(templateDir, filePath);
-
-			try {
-				await fs.access(fullPath);
-			} catch {
-				error(`${ERROR_MESSAGES.TEMPLATE_FILE_NOT_FOUND} ${fullPath}`);
-				return undefined;
-			}
-
-			const content = await fs.readFile(fullPath, "utf-8");
-			return content;
-		} catch (err) {
-			error(
-				`${ERROR_MESSAGES.FAILED_TO_READ_TEMPLATE} ${
-					err instanceof Error
-						? err.message
-						: "Unknown error occurred"
-				}`,
-				err instanceof Error ? err : undefined
-			);
-			return undefined;
-		}
+		// Template not found in either standard or custom templates
+		const errMsg = `${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${licenseType}`;
+		error(`Template service: ${errMsg}`);
+		return [null, new Error(errMsg)];
 	}
 
 	public async createCustomTemplate(
-		name: LicenseType,
+		name: string,
 		content: string
 	): Promise<void> {
 		const newTemplate: LicenseTemplate = {
-			name,
+			name: name as LicenseType,
 			content,
 		};
 
@@ -168,7 +131,7 @@ export class TemplateService implements ITemplateService {
 	}
 
 	public async updateCustomTemplate(
-		name: LicenseType,
+		name: string,
 		content: string
 	): Promise<void> {
 		const currentTemplates: LicenseTemplate[] =
@@ -178,13 +141,14 @@ export class TemplateService implements ITemplateService {
 			(template) => template.name === name
 		);
 		if (templateIndex === -1) {
-			error(`Template with name "${name}" not found`);
+			const errMsg = `Template with name "${name}" not found`;
+			error(errMsg);
 			return;
 		}
 
 		const updatedTemplates = [...currentTemplates];
 		updatedTemplates[templateIndex] = {
-			name,
+			name: name as LicenseType,
 			content,
 		};
 

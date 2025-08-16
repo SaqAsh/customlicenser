@@ -11,6 +11,7 @@ export class LicenseService implements ILicenseService {
 
 	public formatBlockLicense(): string {
 		const lines = this.currentTemplate.split("\n");
+
 		if (lines.length === 0) {
 			return "";
 		}
@@ -35,6 +36,245 @@ export class LicenseService implements ILicenseService {
 			.split("\n")
 			.map((line) => this.linePrepend(line))
 			.join("\n");
+	}
+
+	public extractLicenseFromContent(content: string): string {
+		const trimmedContent = content.trim();
+		let pointer = 0;
+
+		while (pointer < trimmedContent.length) {
+			const commentStart = this.findCommentStart(trimmedContent, pointer);
+
+			if (commentStart === -1) {
+				break;
+			}
+
+			const commentEnd = this.findCommentEnd(
+				trimmedContent,
+				commentStart
+			);
+
+			if (commentEnd === -1) {
+				break;
+			}
+
+			const licenseContent = trimmedContent.substring(
+				commentStart,
+				commentEnd
+			);
+
+			if (this.isLicenseContent(licenseContent)) {
+				return this.cleanLicenseContent(licenseContent);
+			}
+
+			pointer = commentEnd;
+		}
+
+		return "";
+	}
+
+	private findCommentStart(content: string, startIndex: number): number {
+		const remainingContent = content.substring(startIndex);
+
+		switch (this.language) {
+			case "javascript":
+			case "typescript":
+			case "java":
+			case "c":
+			case "cpp":
+			case "csharp":
+			case "go":
+			case "rust":
+			case "swift":
+			case "kotlin":
+			case "scala":
+			case "php":
+				const lineCommentIndex = remainingContent.indexOf("//");
+				const blockCommentIndex = remainingContent.indexOf("/*");
+
+				if (lineCommentIndex === -1 && blockCommentIndex === -1) {
+					return -1;
+				}
+
+				if (lineCommentIndex === -1) {
+					return startIndex + blockCommentIndex;
+				}
+
+				if (blockCommentIndex === -1) {
+					return startIndex + lineCommentIndex;
+				}
+
+				return (
+					startIndex + Math.min(lineCommentIndex, blockCommentIndex)
+				);
+
+			case "python":
+			case "ruby":
+			case "shell":
+				const hashIndex = remainingContent.indexOf("#");
+				const docStringIndex = remainingContent.indexOf('"""');
+
+				if (hashIndex === -1 && docStringIndex === -1) {
+					return -1;
+				}
+
+				if (hashIndex === -1) {
+					return startIndex + docStringIndex;
+				}
+
+				if (docStringIndex === -1) {
+					return startIndex + hashIndex;
+				}
+
+				return startIndex + Math.min(hashIndex, docStringIndex);
+
+			case "html":
+			case "xml":
+				const htmlCommentIndex = remainingContent.indexOf("<!--");
+				return htmlCommentIndex === -1
+					? -1
+					: startIndex + htmlCommentIndex;
+
+			default:
+				const defaultLineIndex = remainingContent.indexOf("//");
+				const defaultBlockIndex = remainingContent.indexOf("/*");
+
+				if (defaultLineIndex === -1 && defaultBlockIndex === -1) {
+					return -1;
+				}
+
+				if (defaultLineIndex === -1) {
+					return startIndex + defaultBlockIndex;
+				}
+
+				if (defaultBlockIndex === -1) {
+					return startIndex + defaultLineIndex;
+				}
+
+				return (
+					startIndex + Math.min(defaultLineIndex, defaultBlockIndex)
+				);
+		}
+	}
+
+	private findCommentEnd(content: string, startIndex: number): number {
+		const remainingContent = content.substring(startIndex);
+
+		switch (this.language) {
+			case "javascript":
+			case "typescript":
+			case "java":
+			case "c":
+			case "cpp":
+			case "csharp":
+			case "go":
+			case "rust":
+			case "swift":
+			case "kotlin":
+			case "scala":
+			case "php":
+				if (remainingContent.startsWith("//")) {
+					const newlineIndex = remainingContent.indexOf("\n");
+					return newlineIndex === -1
+						? content.length
+						: startIndex + newlineIndex;
+				}
+
+				if (remainingContent.startsWith("/*")) {
+					const blockEndIndex = remainingContent.indexOf("*/");
+					return blockEndIndex === -1
+						? content.length
+						: startIndex + blockEndIndex + 2;
+				}
+
+				return -1;
+
+			case "python":
+			case "ruby":
+			case "shell":
+				if (remainingContent.startsWith("#")) {
+					const newlineIndex = remainingContent.indexOf("\n");
+					return newlineIndex === -1
+						? content.length
+						: startIndex + newlineIndex;
+				}
+
+				if (remainingContent.startsWith('"""')) {
+					const docStringEndIndex = remainingContent.indexOf(
+						'"""',
+						3
+					);
+					return docStringEndIndex === -1
+						? content.length
+						: startIndex + docStringEndIndex + 3;
+				}
+
+				return -1;
+
+			case "html":
+			case "xml":
+				if (remainingContent.startsWith("<!--")) {
+					const htmlEndIndex = remainingContent.indexOf("-->");
+					return htmlEndIndex === -1
+						? content.length
+						: startIndex + htmlEndIndex + 3;
+				}
+
+				return -1;
+
+			default:
+				if (remainingContent.startsWith("//")) {
+					const newlineIndex = remainingContent.indexOf("\n");
+					return newlineIndex === -1
+						? content.length
+						: startIndex + newlineIndex;
+				}
+
+				if (remainingContent.startsWith("/*")) {
+					const blockEndIndex = remainingContent.indexOf("*/");
+					return blockEndIndex === -1
+						? content.length
+						: startIndex + blockEndIndex + 2;
+				}
+
+				return -1;
+		}
+	}
+
+	private isLicenseContent(content: string): boolean {
+		const licensePhrases = [
+			"copyright",
+			"license",
+			"licensed",
+			"licensing",
+			"mit license",
+			"apache license",
+			"gpl",
+			"bsd license",
+			"all rights reserved",
+			"permission is hereby granted",
+			"the above copyright notice",
+			"this software is provided",
+			"without warranty",
+			"limitation of liability",
+		];
+
+		const lowerContent = content.toLowerCase();
+		return licensePhrases.some((phrase) => lowerContent.includes(phrase));
+	}
+
+	private cleanLicenseContent(content: string): string {
+		return content
+			.replace(/^\s*\/\/\s*/, "")
+			.replace(/^\s*\/\*\s*/, "")
+			.replace(/\s*\*\/\s*$/, "")
+			.replace(/^\s*#\s*/, "")
+			.replace(/^\s*<!--\s*/, "")
+			.replace(/\s*-->\s*$/, "")
+			.replace(/^\s*"""\s*/, "")
+			.replace(/\s*"""\s*$/, "")
+			.replace(/^\s*\*\s*/gm, "")
+			.trim();
 	}
 
 	private blockBodyFormat(lines: string[]): string {

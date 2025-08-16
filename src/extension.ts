@@ -14,8 +14,10 @@ import {
 	editCustomLicenseCommand,
 	selectDefaultLicenseCommand,
 	selectLicenseCommand,
+	toggleAutoCorrectCommand,
 	toggleAutoSaveCommand,
 } from "./commands";
+import "./handlers/try-catch";
 import { error } from "./loggers";
 import { LicenseManager, TemplateManager } from "./managers";
 import { ConfigService, FileService, TemplateService } from "./services";
@@ -33,6 +35,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			name: "mit",
 			content: "MIT License template",
 		};
+
 		const templateService = new TemplateService(
 			configService,
 			defaultTemplate
@@ -48,18 +51,19 @@ export async function activate(context: vscode.ExtensionContext) {
 		try {
 			await licenseManager.start();
 		} catch (err) {
-			console.warn(
-				"CustomLicenser: Failed to start license manager:",
-				err
+			const e = err instanceof Error ? err.message : "Unknown error";
+			error(
+				`Extension activation: Failed to start license manager: ${e}`
 			);
 		}
 
 		try {
-			if (licenseManager.isAutoSaveEnabled()) {
+			if (licenseManager.isAutoSaveEnabled) {
 				await licenseManager.enableAutoSave();
 			}
 		} catch (err) {
-			console.warn("CustomLicenser: Failed to enable auto-save:", err);
+			const e = err instanceof Error ? err.message : "Unknown error";
+			error(`Extension activation: Failed to enable auto-save: ${e}`);
 		}
 
 		const commands = [
@@ -74,6 +78,10 @@ export async function activate(context: vscode.ExtensionContext) {
 			{
 				command: "customlicenser.toggleAutoSave",
 				callback: () => toggleAutoSaveCommand(licenseManager),
+			},
+			{
+				command: "customlicenser.toggleAutoCorrect",
+				callback: () => toggleAutoCorrectCommand(licenseManager),
 			},
 			{
 				command: "customlicenser.selectLicense",
@@ -131,10 +139,9 @@ export async function activate(context: vscode.ExtensionContext) {
 			context.subscriptions.push(disposable);
 		});
 	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
+		const e = err instanceof Error ? err.message : "Unknown error occurred";
 		await error(
-			`Failed to activate extension: ${errorMessage}`,
+			`Failed to activate extension: ${e}`,
 			err instanceof Error ? err : undefined
 		);
 	}
@@ -147,8 +154,7 @@ export function deactivate() {
 		}
 		console.info("CustomLicenser extension deactivated");
 	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		console.error(`Failed to deactivate extension: ${errorMessage}`, err);
+		const e = err instanceof Error ? err.message : "Unknown error occurred";
+		console.error(`Failed to deactivate extension: ${e}`, err);
 	}
 }

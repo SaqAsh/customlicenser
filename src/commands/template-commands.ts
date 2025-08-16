@@ -1,13 +1,13 @@
-import * as vscode from "vscode";
 import { error, info } from "../loggers";
 import { LicenseManager, TemplateManager } from "../managers";
 import { ConfigService } from "../services";
+import { displayInputBox, displayQuickPick } from "../ui";
 
 export async function createCustomLicenseCommand(
 	templateManager: TemplateManager
 ): Promise<void> {
-	try {
-		const templateName = await vscode.window.showInputBox({
+	const templateNamePromise = Promise.resolve(
+		displayInputBox({
 			prompt: "Enter a name for your custom license template",
 			placeHolder: "My Custom License",
 			ignoreFocusOut: true,
@@ -17,19 +17,17 @@ export async function createCustomLicenseCommand(
 				}
 				return null;
 			},
-		});
+		})
+	);
 
-		if (templateName) {
-			await templateManager.handleTemplateCreation(templateName as any);
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		console.error("Extension: Error in createCustomLicense:", err);
-		await error(
-			`Failed to create custom license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const [templateName, err] = await tryCatch(templateNamePromise);
+
+	if (err) {
+		await error(`Failed to create custom license: ${err.message}`, err);
+	}
+	if (templateName) {
+		//TODO: Implement template creation logic
+		await templateManager.handleTemplateCreation(templateName as any);
 	}
 }
 
@@ -37,30 +35,33 @@ export async function editCustomLicenseCommand(
 	licenseManager: LicenseManager,
 	templateManager: TemplateManager
 ): Promise<void> {
-	try {
-		const availableLicenses = await licenseManager.getAvailableLicenses();
+	const [availableLicenses, err] = await licenseManager.availableLicenses();
 
-		if (availableLicenses.length === 0) {
-			await info("No custom licenses available. Create one first.");
-			return;
-		}
+	if (err) {
+		await error(`Failed to get available licenses: ${err.message}`, err);
+		return;
+	}
 
-		const selectedLicense = await vscode.window.showQuickPick(
-			availableLicenses,
-			{
-				placeHolder: "Select a custom license to edit",
-			}
-		);
+	if (availableLicenses.length === 0) {
+		await info("No custom licenses available. Create one first.");
+		return;
+	}
 
-		if (selectedLicense) {
-			await templateManager.handleTemplateEditing(selectedLicense);
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to edit custom license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
+	const quickPickItems = availableLicenses.map((license) => ({
+		label: license,
+		description: `Add ${license} license to the current file`,
+	}));
+
+	const selectedLicense = await displayQuickPick(
+		quickPickItems,
+		"Select a custom license to edit",
+		false,
+		false
+	);
+
+	if (selectedLicense) {
+		await templateManager.handleTemplateEditing(
+			selectedLicense.description
 		);
 	}
 }
@@ -69,35 +70,36 @@ export async function selectDefaultLicenseCommand(
 	licenseManager: LicenseManager,
 	configService: ConfigService
 ): Promise<void> {
-	try {
-		const availableLicenses = await licenseManager.getAvailableLicenses();
+	const [availableLicenses, err] = await licenseManager.availableLicenses();
 
-		if (availableLicenses.length === 0) {
-			await info("No licenses available. Create some licenses first.");
-			return;
-		}
+	if (err) {
+		await error(`Failed to get available licenses: ${err.message}`, err);
+		return;
+	}
 
-		const selectedLicense = await vscode.window.showQuickPick(
-			availableLicenses,
-			{
-				placeHolder: "Select your default license",
-			}
-		);
+	if (availableLicenses.length === 0) {
+		await info("No licenses available. Create some licenses first.");
+		return;
+	}
 
-		if (selectedLicense) {
-			const defaultTemplate = licenseManager.getDefaultLicense();
-			await configService.updateDefaultLicense({
-				name: selectedLicense as any,
-				content: defaultTemplate.content,
-			});
-			await info(`Default license set to: ${selectedLicense}`);
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to select default license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const quickPickItems = availableLicenses.map((license) => ({
+		label: license,
+		description: `Add ${license} license to the current file`,
+	}));
+
+	const selectedLicense = await displayQuickPick(
+		quickPickItems,
+		"Select a custom license to edit",
+		false,
+		false
+	);
+
+	if (selectedLicense) {
+		const defaultTemplate = licenseManager.defaultLicense;
+		await configService.updateDefaultLicense({
+			name: selectedLicense as any,
+			content: defaultTemplate.content,
+		});
+		await info(`Default license set to: ${selectedLicense}`);
 	}
 }
