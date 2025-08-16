@@ -272,6 +272,6 @@
 	},
 	"dependencies": {
 		"fast-levenshtein": "^3.0.0",
-		"fastest-levenshtein": "^1.0.16"
+		"fast-levenshtein": "^3.0.0"
 	}
 }
