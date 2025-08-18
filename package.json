@@ -6,8 +6,9 @@
 	},
 	"displayName": "CustomLicenser",
 	"description": "A flexible licensing tool that lets you choose from standard licenses or create your own custom terms—perfect for developers, creators, and teams who need control over how their work is shared and used.",
-	"version": "0.0.2",
+	"version": "0.0.4",
 	"publisher": "saqash-dev",
+	"icon": "icon.png",
 	"engines": {
 		"vscode": "^1.102.0"
 	},
@@ -64,6 +65,11 @@
 			{
 				"command": "customlicenser.toggleAutoSave",
 				"title": "Toggle Auto Add On Save",
+				"category": "CustomLicenser"
+			},
+			{
+				"command": "customlicenser.toggleAutoCorrect",
+				"title": "Toggle Auto-Correct On Save",
 				"category": "CustomLicenser"
 			},
 			{
@@ -198,6 +204,11 @@
 					"default": false,
 					"description": "Enable auto-add license on save"
 				},
+				"customlicenser.autoCorrect": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable auto-correct license on save"
+				},
 				"customlicenser.customTemplates": {
 					"type": "array",
 					"default": [],
@@ -242,11 +253,11 @@
 		}
 	},
 	"scripts": {
-		"copy-templates": "cp -r src/license-templates dist/",
 		"compile": "npx esbuild src/extension.ts --bundle --format=cjs --platform=node --outfile=dist/extension.js --external:vscode",
-		"build": "npm run compile && npm run copy-templates"
+		"build": "npm run compile"
 	},
 	"devDependencies": {
+		"@types/fast-levenshtein": "^0.0.4",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "20.x",
 		"@types/vscode": "^1.102.0",
@@ -259,5 +270,7 @@
 		"npm-run-all": "^4.1.5",
 		"typescript": "^5.8.3"
 	},
-	"dependencies": {}
+	"dependencies": {
+		"fast-levenshtein": "^3.0.0"
+	}
 }

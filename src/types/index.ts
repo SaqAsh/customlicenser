@@ -1,5 +1,9 @@
 export { CommentLookup } from "./CommentLookup";
 export { CommentStyle } from "./CommentStyle";
+export { ExtractedLicense } from "./ExtractedLicense";
+export { Failure } from "./Failure";
 export { FileInfo } from "./FileInfo";
 export { LicenseTemplate } from "./LicenseTemplate";
-export { LicenseType } from "./LicenseType"; 
+export { LicenseType } from "./LicenseType";
+export { Result } from "./Result";
+export { Success } from "./Success";

@@ -1,13 +1,14 @@
-import * as vscode from "vscode";
 import { error, info } from "../loggers";
 import { LicenseManager, TemplateManager } from "../managers";
 import { ConfigService } from "../services";
+import { ITemplateService } from "../services/interfaces";
+import { displayInputBox, displayQuickPick } from "../ui";
 
 export async function createCustomLicenseCommand(
 	templateManager: TemplateManager
 ): Promise<void> {
-	try {
-		const templateName = await vscode.window.showInputBox({
+	const templateNamePromise = Promise.resolve(
+		displayInputBox({
 			prompt: "Enter a name for your custom license template",
 			placeHolder: "My Custom License",
 			ignoreFocusOut: true,
@@ -17,19 +18,17 @@ export async function createCustomLicenseCommand(
 				}
 				return null;
 			},
-		});
+		})
+	);
 
-		if (templateName) {
-			await templateManager.handleTemplateCreation(templateName as any);
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		console.error("Extension: Error in createCustomLicense:", err);
-		await error(
-			`Failed to create custom license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const [templateName, err] = await tryCatch(templateNamePromise);
+
+	if (err) {
+		await error(`Failed to create custom license: ${err.message}`, err);
+	}
+	if (templateName) {
+		//TODO: Implement template creation logic
+		await templateManager.handleTemplateCreation(templateName as any);
 	}
 }
 
@@ -37,67 +36,82 @@ export async function editCustomLicenseCommand(
 	licenseManager: LicenseManager,
 	templateManager: TemplateManager
 ): Promise<void> {
-	try {
-		const availableLicenses = await licenseManager.getAvailableLicenses();
+	const [availableLicenses, err] = await licenseManager.availableLicenses();
 
-		if (availableLicenses.length === 0) {
-			await info("No custom licenses available. Create one first.");
-			return;
-		}
+	if (err) {
+		await error(`Failed to get available licenses: ${err.message}`, err);
+		return;
+	}
 
-		const selectedLicense = await vscode.window.showQuickPick(
-			availableLicenses,
-			{
-				placeHolder: "Select a custom license to edit",
-			}
-		);
+	if (availableLicenses.length === 0) {
+		await info("No custom licenses available. Create one first.");
+		return;
+	}
 
-		if (selectedLicense) {
-			await templateManager.handleTemplateEditing(selectedLicense);
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to edit custom license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
+	const quickPickItems = availableLicenses.map((license) => ({
+		label: license,
+		description: `Add ${license} license to the current file`,
+	}));
+
+	const selectedLicense = await displayQuickPick(
+		quickPickItems,
+		"Select a custom license to edit",
+		false,
+		false
+	);
+
+	if (selectedLicense) {
+		await templateManager.handleTemplateEditing(
+			selectedLicense.description
 		);
 	}
 }
 
 export async function selectDefaultLicenseCommand(
 	licenseManager: LicenseManager,
-	configService: ConfigService
+	configService: ConfigService,
+	templateService: ITemplateService
 ): Promise<void> {
-	try {
-		const availableLicenses = await licenseManager.getAvailableLicenses();
+	const [availableLicenses, err] = await licenseManager.availableLicenses();
 
-		if (availableLicenses.length === 0) {
-			await info("No licenses available. Create some licenses first.");
+	if (err) {
+		await error(`Failed to get available licenses: ${err.message}`, err);
+		return;
+	}
+
+	if (availableLicenses.length === 0) {
+		await info("No licenses available. Create some licenses first.");
+		return;
+	}
+
+	const quickPickItems = availableLicenses.map((license) => ({
+		label: license,
+		description: `Set ${license} as default license`,
+	}));
+
+	const selectedLicense = await displayQuickPick(
+		quickPickItems,
+		"Select a default license",
+		false,
+		false
+	);
+
+	if (selectedLicense) {
+		// Fetch the actual template for the selected license
+		const [template, templateError] = await templateService.getTemplate(
+			selectedLicense.label
+		);
+
+		if (templateError) {
+			await error(
+				`Failed to get template for ${selectedLicense.label}: ${templateError.message}`,
+				templateError
+			);
 			return;
 		}
 
-		const selectedLicense = await vscode.window.showQuickPick(
-			availableLicenses,
-			{
-				placeHolder: "Select your default license",
-			}
-		);
-
-		if (selectedLicense) {
-			const defaultTemplate = licenseManager.getDefaultLicense();
-			await configService.updateDefaultLicense({
-				name: selectedLicense as any,
-				content: defaultTemplate.content,
-			});
-			await info(`Default license set to: ${selectedLicense}`);
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to select default license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+		// Update the default license with the full template
+		await configService.updateDefaultLicense(template);
+		await info(`Default license set to: ${selectedLicense.label}`);
 	}
 }

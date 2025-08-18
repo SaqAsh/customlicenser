@@ -1,16 +1,21 @@
 import { LicenseTemplate, LicenseType } from "../../types";
 
 export interface ILicenseManager {
-    start(): Promise<void>;
-    stop(): Promise<void>;
+	start(): Promise<void>;
+	stop(): Promise<void>;
 
-    enableAutoSave(): Promise<void>;
-    disableAutoSave(): Promise<void>;
-    isAutoSaveEnabled(): boolean;
+	enableAutoSave(): Promise<Result<void, Error>>;
+	disableAutoSave(): Promise<void>;
+	get isAutoSaveEnabled(): boolean;
 
-    isAutoCorrectEnabled(): boolean;
-    addLicenseToFile(licenseType?: LicenseType): Promise<boolean>;
+	enableAutoCorrect(): Promise<Result<void, Error>>;
+	disableAutoCorrect(): Promise<Result<void, Error>>;
+	get isAutoCorrectEnabled(): boolean;
 
-    getAvailableLicenses(): Promise<string[]>;
-    getDefaultLicense(): LicenseTemplate;
+	addLicenseToFile(
+		licenseType?: LicenseType
+	): Promise<Result<boolean, Error>>;
+
+	availableLicenses(): Promise<Result<string[], Error>>;
+	get defaultLicense(): LicenseTemplate;
 }

@@ -1,162 +1,127 @@
-import * as vscode from "vscode";
-
-import { error, info, warn } from "../loggers";
+import { QuickPickItem } from "vscode";
+import { error, info } from "../loggers";
 import { LicenseManager } from "../managers";
+import { displayQuickPick } from "../ui";
 
 export async function selectLicenseCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
-	try {
-		const availableLicenses = await licenseManager.getAvailableLicenses();
+	const [availableLicenses, err] = await licenseManager.availableLicenses();
 
-		if (availableLicenses.length === 0) {
-			await info("No licenses available. Create some licenses first.");
-			return;
-		}
+	if (err) {
+		error(`Failed to get available licenses: ${err.message}`, err);
+		return;
+	}
 
-		const selectedLicense = await vscode.window.showQuickPick(
-			availableLicenses,
-			{
-				placeHolder: "Select a license to add to the current file",
-			}
+	if (availableLicenses.length === 0) {
+		info("No licenses available. Create some licenses first.");
+		return;
+	}
+
+	const quickPickItems: QuickPickItem[] = availableLicenses.map(
+		(license) => ({
+			label: license,
+			description: `Add ${license} license to the current file`,
+		})
+	);
+
+	const selectedLicense = await displayQuickPick(
+		quickPickItems,
+		"Select a license to add to the current file",
+		false,
+		false
+	);
+
+	if (selectedLicense) {
+		const [success, err] = await licenseManager.addLicenseToFile(
+			selectedLicense.label
 		);
 
-		if (selectedLicense) {
-			const success = await licenseManager.addLicenseToFile(
-				selectedLicense as any
-			);
-			if (success) {
-				await info(`${selectedLicense} license added successfully`);
-			} else {
-				await warn("License addition was cancelled or failed");
-			}
+		if (err) {
+			error(`Failed to add license: ${err.message}`, err);
 		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to add license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+
+		if (success) {
+			info(`${selectedLicense.label} license added successfully`);
+		}
 	}
 }
 
 export async function addMITLicenseCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
-	try {
-		const success = await licenseManager.addLicenseToFile("mit");
-		if (success) {
-			await info("MIT license added successfully");
-		} else {
-			await warn("MIT license addition was cancelled or failed");
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to add MIT license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const [success, err] = await licenseManager.addLicenseToFile("mit");
+
+	if (err) {
+		await error(`Failed to add MIT license: ${err.message}`, err);
+	}
+
+	if (success) {
+		await info("MIT license added successfully");
 	}
 }
 
 export async function addGPLLicenseCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
-	try {
-		const success = await licenseManager.addLicenseToFile("gpl");
-		if (success) {
-			await info("GPL license added successfully");
-		} else {
-			await warn("GPL license addition was cancelled or failed");
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to add GPL license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const [success, err] = await licenseManager.addLicenseToFile("gpl");
+	if (err) {
+		await error(`Failed to add GPL license: ${err.message}`, err);
+	}
+
+	if (success) {
+		await info("GPL license added successfully");
 	}
 }
 
 export async function addApacheLicenseCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
-	try {
-		const success = await licenseManager.addLicenseToFile("apache");
-		if (success) {
-			await info("Apache license added successfully");
-		} else {
-			await warn("Apache license addition was cancelled or failed");
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to add Apache license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const [success, err] = await licenseManager.addLicenseToFile("apache");
+
+	if (err) {
+		await error(`Failed to add Apache license: ${err.message}`, err);
+	}
+
+	if (success) {
+		await info("Apache license added successfully");
 	}
 }
 
 export async function addBSDLicenseCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
-	try {
-		const success = await licenseManager.addLicenseToFile("bsd");
-		if (success) {
-			await info("BSD license added successfully");
-		} else {
-			await warn("BSD license addition was cancelled or failed");
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to add BSD license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const [success, err] = await licenseManager.addLicenseToFile("bsd");
+
+	if (err) {
+		await error(`Failed to add BSD license: ${err.message}`, err);
+	}
+
+	if (success) {
+		await info("BSD license added successfully");
 	}
 }
 
 export async function addISCLicenseCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
-	try {
-		const success = await licenseManager.addLicenseToFile("isc");
-		if (success) {
-			await info("ISC license added successfully");
-		} else {
-			await warn("ISC license addition was cancelled or failed");
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to add ISC license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const [success, err] = await licenseManager.addLicenseToFile("isc");
+	if (err) {
+		await error(`Failed to add ISC license: ${err.message}`, err);
+	}
+	if (success) {
+		await info("ISC license added successfully");
 	}
 }
 
 export async function addMozillaLicenseCommand(
 	licenseManager: LicenseManager
 ): Promise<void> {
-	try {
-		const success = await licenseManager.addLicenseToFile("mozilla");
-		if (success) {
-			await info("Mozilla license added successfully");
-		} else {
-			await warn("Mozilla license addition was cancelled or failed");
-		}
-	} catch (err) {
-		const errorMessage =
-			err instanceof Error ? err.message : "Unknown error occurred";
-		await error(
-			`Failed to add Mozilla license: ${errorMessage}`,
-			err instanceof Error ? err : undefined
-		);
+	const [success, err] = await licenseManager.addLicenseToFile("mozilla");
+	if (err) {
+		await error(`Failed to add Mozilla license: ${err.message}`, err);
+	}
+	if (success) {
+		await info("Mozilla license added successfully");
 	}
 }
