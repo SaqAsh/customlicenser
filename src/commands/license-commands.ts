@@ -34,7 +34,7 @@ export async function selectLicenseCommand(
 
 	if (selectedLicense) {
 		const [success, err] = await licenseManager.addLicenseToFile(
-			selectedLicense as any
+			selectedLicense.label
 		);
 
 		if (err) {
@@ -42,7 +42,7 @@ export async function selectLicenseCommand(
 		}
 
 		if (success) {
-			info(`${selectedLicense} license added successfully`);
+			info(`${selectedLicense.label} license added successfully`);
 		}
 	}
 }

@@ -123,7 +123,11 @@ export async function activate(context: vscode.ExtensionContext) {
 			{
 				command: "customlicenser.selectDefaultLicense",
 				callback: () =>
-					selectDefaultLicenseCommand(licenseManager, configService),
+					selectDefaultLicenseCommand(
+						licenseManager,
+						configService,
+						templateService
+					),
 			},
 			{
 				command: "customlicenser.configureSettings",

@@ -1,6 +1,7 @@
 import { error, info } from "../loggers";
 import { LicenseManager, TemplateManager } from "../managers";
 import { ConfigService } from "../services";
+import { ITemplateService } from "../services/interfaces";
 import { displayInputBox, displayQuickPick } from "../ui";
 
 export async function createCustomLicenseCommand(
@@ -68,7 +69,8 @@ export async function editCustomLicenseCommand(
 
 export async function selectDefaultLicenseCommand(
 	licenseManager: LicenseManager,
-	configService: ConfigService
+	configService: ConfigService,
+	templateService: ITemplateService
 ): Promise<void> {
 	const [availableLicenses, err] = await licenseManager.availableLicenses();
 
@@ -84,22 +86,32 @@ export async function selectDefaultLicenseCommand(
 
 	const quickPickItems = availableLicenses.map((license) => ({
 		label: license,
-		description: `Add ${license} license to the current file`,
+		description: `Set ${license} as default license`,
 	}));
 
 	const selectedLicense = await displayQuickPick(
 		quickPickItems,
-		"Select a custom license to edit",
+		"Select a default license",
 		false,
 		false
 	);
 
 	if (selectedLicense) {
-		const defaultTemplate = licenseManager.defaultLicense;
-		await configService.updateDefaultLicense({
-			name: selectedLicense as any,
-			content: defaultTemplate.content,
-		});
-		await info(`Default license set to: ${selectedLicense}`);
+		// Fetch the actual template for the selected license
+		const [template, templateError] = await templateService.getTemplate(
+			selectedLicense.label
+		);
+
+		if (templateError) {
+			await error(
+				`Failed to get template for ${selectedLicense.label}: ${templateError.message}`,
+				templateError
+			);
+			return;
+		}
+
+		// Update the default license with the full template
+		await configService.updateDefaultLicense(template);
+		await info(`Default license set to: ${selectedLicense.label}`);
 	}
 }

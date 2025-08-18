@@ -112,14 +112,27 @@ export class LicenseManager implements ILicenseManager {
 			);
 			if (extractedLicense) {
 				// Get the raw template content for comparison (not formatted)
+				const defaultLicenseObj =
+					this.configurationService.defaultLicense;
+				console.log(
+					"DEBUG: auto-save defaultLicenseObj:",
+					JSON.stringify(defaultLicenseObj, null, 2)
+				);
 				const licenseTypeToUse =
-					this.configurationService.defaultLicense.name;
-				const [template, templateError] =
-					await this.templateService.getTemplate(licenseTypeToUse);
+					typeof defaultLicenseObj.name === "string"
+						? defaultLicenseObj.name
+						: "mit"; // fallback to 'mit' if name is not a string
+				console.log(
+					"DEBUG: auto-save licenseTypeToUse:",
+					licenseTypeToUse
+				);
+				const [template, err] = await this.templateService.getTemplate(
+					licenseTypeToUse
+				);
 
-				if (templateError) {
+				if (err) {
 					error(
-						`Auto-save failed: Error getting template for ${document.fileName}: ${templateError.message}`
+						`Auto-save failed: Error getting template for ${document.fileName}: ${err.message}`
 					);
 					this.isProcessingAutoSave = false;
 					return;
@@ -186,7 +199,6 @@ export class LicenseManager implements ILicenseManager {
 						await this.correctLicense(extractedLicense);
 
 					if (correctionError) {
-						error(correctionError.message);
 						this.isProcessingAutoSave = false;
 						this.isAutoCorrecting = false;
 						return;
@@ -268,8 +280,8 @@ export class LicenseManager implements ILicenseManager {
 	public async addLicenseToFile(
 		licenseType?: LicenseType
 	): Promise<Result<boolean, Error>> {
-		const licenseTypeToUse =
-			licenseType || this.configurationService.defaultLicense.name;
+		const defaultLicenseObj = this.configurationService.defaultLicense;
+		const licenseTypeToUse = licenseType || defaultLicenseObj.name;
 
 		if (licenseTypeToUse === undefined) {
 			error(`License manager: No license type found in configuration`);
@@ -345,7 +357,11 @@ export class LicenseManager implements ILicenseManager {
 		extractedLicense: ExtractedLicense
 	): Promise<Result<boolean, Error>> {
 		this.isAutoCorrecting = true;
-		const licenseTypeToUse = this.configurationService.defaultLicense.name;
+		const defaultLicenseObj = this.configurationService.defaultLicense;
+		const licenseTypeToUse =
+			typeof defaultLicenseObj.name === "string"
+				? defaultLicenseObj.name
+				: "mit"; // fallback to 'mit' if name is not a string
 
 		if (licenseTypeToUse === undefined) {
 			error(`License manager: No license type found in configuration`);
@@ -394,7 +410,15 @@ export class LicenseManager implements ILicenseManager {
 	}
 
 	private async getFormattedDefaultLicense(): Promise<Result<string, Error>> {
-		const licenseTypeToUse = this.configurationService.defaultLicense.name;
+		const defaultLicenseObj = this.configurationService.defaultLicense;
+		console.log(
+			"DEBUG: defaultLicenseObj:",
+			JSON.stringify(defaultLicenseObj, null, 2)
+		);
+		const licenseTypeToUse =
+			typeof defaultLicenseObj.name === "string"
+				? defaultLicenseObj.name
+				: "mit"; // fallback to 'mit' if name is not a string
 
 		if (licenseTypeToUse === undefined) {
 			return [null, new Error(ERROR_MESSAGES.NO_LICENSE_TYPE)];
