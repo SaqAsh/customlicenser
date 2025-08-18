@@ -25,7 +25,7 @@ export class TemplateService implements ITemplateService {
 	) {
 		this.configService = configService;
 		this.currentTemplate = currentTemplate;
-		this.defaultLicenseTemplate = this.configService.getDefaultLicense;
+		this.defaultLicenseTemplate = this.configService.defaultLicense;
 		this.allTemplates = this.configService.allTemplates;
 	}
 
@@ -35,8 +35,8 @@ export class TemplateService implements ITemplateService {
 			return template;
 		}
 
-		const year = this.configService.getYear();
-		const authorName = this.configService.getAuthorName;
+		const year = this.configService.year;
+		const authorName = this.configService.authorName;
 
 		const processedContent = template.content
 			.replace(/\{\{year\}\}/gi, year) // Added 'i' flag for case-insensitive
