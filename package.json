@@ -271,7 +271,6 @@
 		"typescript": "^5.8.3"
 	},
 	"dependencies": {
-		"fast-levenshtein": "^3.0.0",
 		"fast-levenshtein": "^3.0.0"
 	}
 }
