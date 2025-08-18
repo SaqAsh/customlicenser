@@ -111,21 +111,12 @@ export class LicenseManager implements ILicenseManager {
 				document.getText()
 			);
 			if (extractedLicense) {
-				// Get the raw template content for comparison (not formatted)
 				const defaultLicenseObj =
 					this.configurationService.defaultLicense;
-				console.log(
-					"DEBUG: auto-save defaultLicenseObj:",
-					JSON.stringify(defaultLicenseObj, null, 2)
-				);
 				const licenseTypeToUse =
 					typeof defaultLicenseObj.name === "string"
 						? defaultLicenseObj.name
-						: "mit"; // fallback to 'mit' if name is not a string
-				console.log(
-					"DEBUG: auto-save licenseTypeToUse:",
-					licenseTypeToUse
-				);
+						: "mit";
 				const [template, err] = await this.templateService.getTemplate(
 					licenseTypeToUse
 				);
@@ -158,6 +149,12 @@ export class LicenseManager implements ILicenseManager {
 					licenseService.extractLicenseFromContent(
 						extractedLicense.content
 					);
+
+				// If the extracted license is very short (probably just a header), don't auto-correct
+				if (cleanedExtractedContent.length < 50) {
+					this.isProcessingAutoSave = false;
+					return;
+				}
 
 				const [hasTypo, hasTypoError] = await this.fileService.hasTypo(
 					cleanedExtractedContent,
@@ -411,10 +408,6 @@ export class LicenseManager implements ILicenseManager {
 
 	private async getFormattedDefaultLicense(): Promise<Result<string, Error>> {
 		const defaultLicenseObj = this.configurationService.defaultLicense;
-		console.log(
-			"DEBUG: defaultLicenseObj:",
-			JSON.stringify(defaultLicenseObj, null, 2)
-		);
 		const licenseTypeToUse =
 			typeof defaultLicenseObj.name === "string"
 				? defaultLicenseObj.name

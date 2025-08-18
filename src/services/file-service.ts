@@ -318,8 +318,11 @@ export class FileService implements IFileService {
 			const line = lines[currentLine];
 			const trimmedLine = line.trim();
 
-			// If line starts with comment prefix, it's part of the license
-			if (trimmedLine.startsWith(prefix)) {
+			// If line starts with comment prefix or is just the comment character (empty comment line), it's part of the license
+			if (
+				trimmedLine.startsWith(prefix) ||
+				trimmedLine === prefix.trim()
+			) {
 				licenseContent += line;
 				if (currentLine < len - 1) {
 					licenseContent += "\n";

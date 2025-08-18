@@ -265,14 +265,14 @@ export class LicenseService implements ILicenseService {
 
 	private cleanLicenseContent(content: string): string {
 		return content
-			.replace(/^\s*\/\/\s*/, "")
-			.replace(/^\s*\/\*\s*/, "")
-			.replace(/\s*\*\/\s*$/, "")
-			.replace(/^\s*#\s*/, "")
-			.replace(/^\s*<!--\s*/, "")
-			.replace(/\s*-->\s*$/, "")
-			.replace(/^\s*"""\s*/, "")
-			.replace(/\s*"""\s*$/, "")
+			.replace(/^\s*\/\/\s*/gm, "")
+			.replace(/^\s*\/\*\s*/gm, "")
+			.replace(/\s*\*\/\s*$/gm, "")
+			.replace(/^\s*#\s*/gm, "")
+			.replace(/^\s*<!--\s*/gm, "")
+			.replace(/\s*-->\s*$/gm, "")
+			.replace(/^\s*"""\s*/gm, "")
+			.replace(/\s*"""\s*$/gm, "")
 			.replace(/^\s*\*\s*/gm, "")
 			.trim();
 	}
