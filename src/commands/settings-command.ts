@@ -1,8 +1,8 @@
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
-export function configureSettingsCommand(): void {
-	vscode.commands.executeCommand(
-		"workbench.action.openSettings",
-		"customlicenser"
-	);
+export function configureSettingsCommand(): Thenable<unknown> {
+  return vscode.commands.executeCommand(
+    'workbench.action.openSettings',
+    'customlicenser',
+  );
 }

@@ -1,117 +1,108 @@
-import { error, info } from "../loggers";
-import { LicenseManager, TemplateManager } from "../managers";
-import { ConfigService } from "../services";
-import { ITemplateService } from "../services/interfaces";
-import { displayInputBox, displayQuickPick } from "../ui";
+import {tryCatch} from '../handlers';
+import {error, info} from '../loggers';
+import {type LicenseManager, type TemplateManager} from '../managers';
+import {type ConfigService} from '../services';
+import {type ITemplateService} from '../services/interfaces';
+import {displayInputBox, displayQuickPick} from '../ui';
 
 export async function createCustomLicenseCommand(
-	templateManager: TemplateManager
+  templateManager: TemplateManager,
 ): Promise<void> {
-	const templateNamePromise = Promise.resolve(
-		displayInputBox({
-			prompt: "Enter a name for your custom license template",
-			placeHolder: "My Custom License",
-			ignoreFocusOut: true,
-			validateInput: (value) => {
-				if (!value || value.trim().length === 0) {
-					return "Template name cannot be empty";
-				}
-				return null;
-			},
-		})
-	);
+  const [templateName, err] = await tryCatch(
+    displayInputBox({
+      prompt: 'Enter a name for your custom license template',
+      placeHolder: 'My Custom License',
+      ignoreFocusOut: true,
+      validateInput: value =>
+        !value || value.trim().length === 0
+          ? 'Template name cannot be empty'
+          : undefined,
+    }),
+  );
 
-	const [templateName, err] = await tryCatch(templateNamePromise);
+  if (err) {
+    error(`Failed to create custom license: ${err.message}`, err);
+    return;
+  }
+  if (!templateName) {
+    return;
+  }
 
-	if (err) {
-		await error(`Failed to create custom license: ${err.message}`, err);
-	}
-	if (templateName) {
-		//TODO: Implement template creation logic
-		await templateManager.handleTemplateCreation(templateName as any);
-	}
+  await templateManager.handleTemplateCreation(templateName);
 }
 
 export async function editCustomLicenseCommand(
-	licenseManager: LicenseManager,
-	templateManager: TemplateManager
+  licenseManager: LicenseManager,
+  templateManager: TemplateManager,
 ): Promise<void> {
-	const [availableLicenses, err] = await licenseManager.availableLicenses();
+  const [availableLicenses, err] = await licenseManager.availableLicenses();
+  if (err) {
+    error(`Failed to get available licenses: ${err.message}`, err);
+    return;
+  }
+  if (availableLicenses.length === 0) {
+    info('No custom licenses available. Create one first.');
+    return;
+  }
 
-	if (err) {
-		await error(`Failed to get available licenses: ${err.message}`, err);
-		return;
-	}
+  const quickPickItems = availableLicenses.map(license => ({
+    label: license,
+    description: `Edit ${license} template`,
+  }));
 
-	if (availableLicenses.length === 0) {
-		await info("No custom licenses available. Create one first.");
-		return;
-	}
+  const selectedLicense = await displayQuickPick(
+    quickPickItems,
+    'Select a custom license to edit',
+    false,
+    false,
+  );
 
-	const quickPickItems = availableLicenses.map((license) => ({
-		label: license,
-		description: `Add ${license} license to the current file`,
-	}));
-
-	const selectedLicense = await displayQuickPick(
-		quickPickItems,
-		"Select a custom license to edit",
-		false,
-		false
-	);
-
-	if (selectedLicense) {
-		await templateManager.handleTemplateEditing(
-			selectedLicense.description
-		);
-	}
+  if (selectedLicense) {
+    await templateManager.handleTemplateEditing(selectedLicense.label);
+  }
 }
 
 export async function selectDefaultLicenseCommand(
-	licenseManager: LicenseManager,
-	configService: ConfigService,
-	templateService: ITemplateService
+  licenseManager: LicenseManager,
+  configService: ConfigService,
+  templateService: ITemplateService,
 ): Promise<void> {
-	const [availableLicenses, err] = await licenseManager.availableLicenses();
+  const [availableLicenses, err] = await licenseManager.availableLicenses();
+  if (err) {
+    error(`Failed to get available licenses: ${err.message}`, err);
+    return;
+  }
+  if (availableLicenses.length === 0) {
+    info('No licenses available. Create some licenses first.');
+    return;
+  }
 
-	if (err) {
-		await error(`Failed to get available licenses: ${err.message}`, err);
-		return;
-	}
+  const quickPickItems = availableLicenses.map(license => ({
+    label: license,
+    description: `Set ${license} as default license`,
+  }));
 
-	if (availableLicenses.length === 0) {
-		await info("No licenses available. Create some licenses first.");
-		return;
-	}
+  const selectedLicense = await displayQuickPick(
+    quickPickItems,
+    'Select a default license',
+    false,
+    false,
+  );
+  if (!selectedLicense) {
+    return;
+  }
 
-	const quickPickItems = availableLicenses.map((license) => ({
-		label: license,
-		description: `Set ${license} as default license`,
-	}));
+  const [template, templateError] = await templateService.getTemplate(
+    selectedLicense.label,
+  );
+  if (templateError) {
+    error(
+      `Failed to get template for ${selectedLicense.label}: ${templateError.message}`,
+      templateError,
+    );
+    return;
+  }
 
-	const selectedLicense = await displayQuickPick(
-		quickPickItems,
-		"Select a default license",
-		false,
-		false
-	);
-
-	if (selectedLicense) {
-		// Fetch the actual template for the selected license
-		const [template, templateError] = await templateService.getTemplate(
-			selectedLicense.label
-		);
-
-		if (templateError) {
-			await error(
-				`Failed to get template for ${selectedLicense.label}: ${templateError.message}`,
-				templateError
-			);
-			return;
-		}
-
-		// Update the default license with the full template
-		await configService.updateDefaultLicense(template);
-		await info(`Default license set to: ${selectedLicense.label}`);
-	}
+  await configService.updateDefaultLicense(template);
+  info(`Default license set to: ${selectedLicense.label}`);
 }

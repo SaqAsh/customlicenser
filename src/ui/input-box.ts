@@ -1,12 +1,12 @@
-import * as vscode from "vscode";
-import { InputBoxOptions } from "vscode";
+import * as vscode from 'vscode';
+import {type InputBoxOptions} from 'vscode';
 
 /**
- * @param options - Input box options to configure the input box
- * @return Promise that resolves to the entered string or undefined if cancelled
+ * Thin wrapper around `window.showInputBox` so call sites can be mocked
+ * in tests without reaching into the `vscode` namespace directly.
  */
-export const displayInputBox = (
-	options: InputBoxOptions
-): Thenable<string | undefined> => {
-	return vscode.window.showInputBox(options);
-};
+export function displayInputBox(
+  options: InputBoxOptions,
+): Thenable<string | undefined> {
+  return vscode.window.showInputBox(options);
+}
