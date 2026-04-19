@@ -1,3 +1,3 @@
-import { ILicenseManager } from "./ILicenseManager";
-import { ITemplateManager } from "./ITemplateManager";
-export { ILicenseManager, ITemplateManager };
+import {ILicenseManager} from './ILicenseManager';
+import {ITemplateManager} from './ITemplateManager';
+export {ILicenseManager, ITemplateManager};

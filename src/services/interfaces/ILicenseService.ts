@@ -1,5 +1,5 @@
 export interface ILicenseService {
-    formatBlockLicense(): string;
-    formatLineLicense(): string;
-    extractLicenseFromContent(content: string): string;
+  formatBlockLicense(): string;
+  formatLineLicense(): string;
+  extractLicenseFromContent(content: string): string;
 }

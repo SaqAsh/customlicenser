@@ -1,2 +1,2 @@
-export { LicenseManager } from "./license-manager";
-export { TemplateManager } from "./template-manager";
+export {LicenseManager} from './license-manager';
+export {TemplateManager} from './template-manager';

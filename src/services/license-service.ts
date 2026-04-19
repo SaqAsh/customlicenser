@@ -1,379 +1,219 @@
-import { ILicenseService } from "./interfaces";
+import {type ILicenseService} from './interfaces';
+
+type CommentKind = 'c-style' | 'hash' | 'markup' | 'default';
+
+const C_STYLE_LANGUAGES: ReadonlySet<string> = new Set([
+  'javascript',
+  'typescript',
+  'java',
+  'c',
+  'cpp',
+  'csharp',
+  'go',
+  'rust',
+  'swift',
+  'kotlin',
+  'scala',
+  'php',
+]);
+const HASH_LANGUAGES: ReadonlySet<string> = new Set([
+  'python',
+  'ruby',
+  'shell',
+]);
+const MARKUP_LANGUAGES: ReadonlySet<string> = new Set(['html', 'xml']);
+
+interface Markers {
+  line?: string;
+  blockStart?: string;
+  blockEnd?: string;
+}
+
+const MARKERS: Readonly<Record<CommentKind, Markers>> = {
+  'c-style': {line: '//', blockStart: '/*', blockEnd: '*/'},
+  hash: {line: '#', blockStart: '"""', blockEnd: '"""'},
+  markup: {blockStart: '<!--', blockEnd: '-->'},
+  default: {line: '//', blockStart: '/*', blockEnd: '*/'},
+};
+
+/**
+ * Formatter for a single block-comment line. Each comment kind implements
+ * the four cap variants (start-only, end-only, both, neither) via a table.
+ */
+interface BlockVariants {
+  both: (line: string) => string;
+  start: (line: string) => string;
+  end: (line: string) => string;
+  middle: (line: string) => string;
+}
+
+const BLOCK_VARIANTS: Readonly<Record<string, BlockVariants>> = {
+  'c-style': {
+    both: line => `/* ${line} */`,
+    start: line => `/* ${line}`,
+    end: line => ` * ${line}\n */`,
+    middle: line => ` * ${line}`,
+  },
+  python: {
+    both: line => `""" ${line} """`,
+    start: line => `""" ${line}`,
+    end: line => `${line} """`,
+    middle: line => line,
+  },
+  markup: {
+    both: line => `<!-- ${line} -->`,
+    start: line => `<!-- ${line}`,
+    end: line => `${line} -->`,
+    middle: line => line,
+  },
+};
 
 export class LicenseService implements ILicenseService {
-	private language: string;
-	private currentTemplate: string;
+  constructor(
+    private readonly language: string,
+    private readonly currentTemplate: string,
+  ) {}
 
-	constructor(language: string, template: string) {
-		this.language = language;
-		this.currentTemplate = template;
-	}
+  formatBlockLicense(): string {
+    const lines = this.currentTemplate.split('\n');
+    if (lines.length === 0) return '';
+    if (lines.length === 1) return this.blockPrepend(lines[0], 'both');
 
-	public formatBlockLicense(): string {
-		const lines = this.currentTemplate.split("\n");
+    return [
+      this.blockPrepend(lines[0], 'start'),
+      lines
+        .slice(1, -1)
+        .map(line => this.blockPrepend(line, 'middle'))
+        .join('\n'),
+      this.blockPrepend(lines[lines.length - 1], 'end'),
+    ].join('\n');
+  }
 
-		if (lines.length === 0) {
-			return "";
-		}
+  formatLineLicense(): string {
+    return this.currentTemplate
+      .split('\n')
+      .map(line => this.linePrepend(line))
+      .join('\n');
+  }
 
-		if (lines.length === 1) {
-			return this.blockPrepend(lines[0], true, true);
-		}
+  extractLicenseFromContent(content: string): string {
+    const trimmedContent = content.trim();
+    let pointer = 0;
 
-		const firstLine = this.blockPrepend(lines[0], true, false);
-		const body = this.blockBodyFormat(lines.slice(1, lines.length - 1));
-		const lastLine = this.blockPrepend(
-			lines[lines.length - 1],
-			false,
-			true
-		);
+    while (pointer < trimmedContent.length) {
+      const commentStart = this.findCommentStart(trimmedContent, pointer);
+      if (commentStart === -1) break;
 
-		return [firstLine, body, lastLine].join("\n");
-	}
+      const commentEnd = this.findCommentEnd(trimmedContent, commentStart);
+      if (commentEnd === -1 || commentEnd <= commentStart) {
+        // Safety break: without forward progress the loop would spin forever.
+        break;
+      }
 
-	public formatLineLicense(): string {
-		return this.currentTemplate
-			.split("\n")
-			.map((line) => this.linePrepend(line))
-			.join("\n");
-	}
+      const slice = trimmedContent.substring(commentStart, commentEnd);
+      if (isLicenseContent(slice)) {
+        return cleanLicenseContent(slice);
+      }
+      pointer = commentEnd;
+    }
+    return '';
+  }
 
-	public extractLicenseFromContent(content: string): string {
-		const trimmedContent = content.trim();
-		let pointer = 0;
+  private get commentKind(): CommentKind {
+    if (C_STYLE_LANGUAGES.has(this.language)) return 'c-style';
+    if (HASH_LANGUAGES.has(this.language)) return 'hash';
+    if (MARKUP_LANGUAGES.has(this.language)) return 'markup';
+    return 'default';
+  }
 
-		while (pointer < trimmedContent.length) {
-			const commentStart = this.findCommentStart(trimmedContent, pointer);
+  private findCommentStart(content: string, startIndex: number): number {
+    const remaining = content.substring(startIndex);
+    const {line, blockStart} = MARKERS[this.commentKind];
 
-			if (commentStart === -1) {
-				break;
-			}
+    const candidates = [line, blockStart]
+      .filter((m): m is string => m !== undefined)
+      .map(m => remaining.indexOf(m))
+      .filter(idx => idx !== -1);
+    return candidates.length === 0 ? -1 : startIndex + Math.min(...candidates);
+  }
 
-			const commentEnd = this.findCommentEnd(
-				trimmedContent,
-				commentStart
-			);
+  private findCommentEnd(content: string, startIndex: number): number {
+    const remaining = content.substring(startIndex);
+    const {line, blockStart, blockEnd} = MARKERS[this.commentKind];
 
-			if (commentEnd === -1) {
-				break;
-			}
+    if (blockStart && blockEnd && remaining.startsWith(blockStart)) {
+      const end = remaining.indexOf(blockEnd, blockStart.length);
+      return end === -1 ? content.length : startIndex + end + blockEnd.length;
+    }
+    if (line && remaining.startsWith(line)) {
+      const newline = remaining.indexOf('\n');
+      return newline === -1 ? content.length : startIndex + newline;
+    }
+    return -1;
+  }
 
-			const licenseContent = trimmedContent.substring(
-				commentStart,
-				commentEnd
-			);
+  private linePrepend(line: string): string {
+    const trimmed = line.trim();
+    switch (this.commentKind) {
+      case 'hash':
+        return `# ${trimmed}`;
+      case 'markup':
+        return `<!-- ${trimmed} -->`;
+      default:
+        return `// ${trimmed}`;
+    }
+  }
 
-			if (this.isLicenseContent(licenseContent)) {
-				return this.cleanLicenseContent(licenseContent);
-			}
+  private blockPrepend(line: string, variant: keyof BlockVariants): string {
+    const trimmed = line.trim();
+    const kind = this.commentKind;
+    const variants =
+      kind === 'markup'
+        ? BLOCK_VARIANTS.markup
+        : this.language === 'python'
+          ? BLOCK_VARIANTS.python
+          : BLOCK_VARIANTS['c-style'];
+    return variants[variant](trimmed);
+  }
+}
 
-			pointer = commentEnd;
-		}
+const LICENSE_PHRASES: readonly string[] = [
+  'copyright',
+  'license',
+  'licensed',
+  'licensing',
+  'mit license',
+  'apache license',
+  'gpl',
+  'bsd license',
+  'all rights reserved',
+  'permission is hereby granted',
+  'the above copyright notice',
+  'this software is provided',
+  'without warranty',
+  'limitation of liability',
+];
 
-		return "";
-	}
+function isLicenseContent(content: string): boolean {
+  const lower = content.toLowerCase();
+  return LICENSE_PHRASES.some(phrase => lower.includes(phrase));
+}
 
-	private findCommentStart(content: string, startIndex: number): number {
-		const remainingContent = content.substring(startIndex);
+const CLEAN_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/^\s*\/\/\s*/gm, ''],
+  [/^\s*\/\*\s*/gm, ''],
+  [/\s*\*\/\s*$/gm, ''],
+  [/^\s*#\s*/gm, ''],
+  [/^\s*<!--\s*/gm, ''],
+  [/\s*-->\s*$/gm, ''],
+  [/^\s*"""\s*/gm, ''],
+  [/\s*"""\s*$/gm, ''],
+  [/^\s*\*\s*/gm, ''],
+];
 
-		switch (this.language) {
-			case "javascript":
-			case "typescript":
-			case "java":
-			case "c":
-			case "cpp":
-			case "csharp":
-			case "go":
-			case "rust":
-			case "swift":
-			case "kotlin":
-			case "scala":
-			case "php":
-				const lineCommentIndex = remainingContent.indexOf("//");
-				const blockCommentIndex = remainingContent.indexOf("/*");
-
-				if (lineCommentIndex === -1 && blockCommentIndex === -1) {
-					return -1;
-				}
-
-				if (lineCommentIndex === -1) {
-					return startIndex + blockCommentIndex;
-				}
-
-				if (blockCommentIndex === -1) {
-					return startIndex + lineCommentIndex;
-				}
-
-				return (
-					startIndex + Math.min(lineCommentIndex, blockCommentIndex)
-				);
-
-			case "python":
-			case "ruby":
-			case "shell":
-				const hashIndex = remainingContent.indexOf("#");
-				const docStringIndex = remainingContent.indexOf('"""');
-
-				if (hashIndex === -1 && docStringIndex === -1) {
-					return -1;
-				}
-
-				if (hashIndex === -1) {
-					return startIndex + docStringIndex;
-				}
-
-				if (docStringIndex === -1) {
-					return startIndex + hashIndex;
-				}
-
-				return startIndex + Math.min(hashIndex, docStringIndex);
-
-			case "html":
-			case "xml":
-				const htmlCommentIndex = remainingContent.indexOf("<!--");
-				return htmlCommentIndex === -1
-					? -1
-					: startIndex + htmlCommentIndex;
-
-			default:
-				const defaultLineIndex = remainingContent.indexOf("//");
-				const defaultBlockIndex = remainingContent.indexOf("/*");
-
-				if (defaultLineIndex === -1 && defaultBlockIndex === -1) {
-					return -1;
-				}
-
-				if (defaultLineIndex === -1) {
-					return startIndex + defaultBlockIndex;
-				}
-
-				if (defaultBlockIndex === -1) {
-					return startIndex + defaultLineIndex;
-				}
-
-				return (
-					startIndex + Math.min(defaultLineIndex, defaultBlockIndex)
-				);
-		}
-	}
-
-	private findCommentEnd(content: string, startIndex: number): number {
-		const remainingContent = content.substring(startIndex);
-
-		switch (this.language) {
-			case "javascript":
-			case "typescript":
-			case "java":
-			case "c":
-			case "cpp":
-			case "csharp":
-			case "go":
-			case "rust":
-			case "swift":
-			case "kotlin":
-			case "scala":
-			case "php":
-				if (remainingContent.startsWith("//")) {
-					const newlineIndex = remainingContent.indexOf("\n");
-					return newlineIndex === -1
-						? content.length
-						: startIndex + newlineIndex;
-				}
-
-				if (remainingContent.startsWith("/*")) {
-					const blockEndIndex = remainingContent.indexOf("*/");
-					return blockEndIndex === -1
-						? content.length
-						: startIndex + blockEndIndex + 2;
-				}
-
-				return -1;
-
-			case "python":
-			case "ruby":
-			case "shell":
-				if (remainingContent.startsWith("#")) {
-					const newlineIndex = remainingContent.indexOf("\n");
-					return newlineIndex === -1
-						? content.length
-						: startIndex + newlineIndex;
-				}
-
-				if (remainingContent.startsWith('"""')) {
-					const docStringEndIndex = remainingContent.indexOf(
-						'"""',
-						3
-					);
-					return docStringEndIndex === -1
-						? content.length
-						: startIndex + docStringEndIndex + 3;
-				}
-
-				return -1;
-
-			case "html":
-			case "xml":
-				if (remainingContent.startsWith("<!--")) {
-					const htmlEndIndex = remainingContent.indexOf("-->");
-					return htmlEndIndex === -1
-						? content.length
-						: startIndex + htmlEndIndex + 3;
-				}
-
-				return -1;
-
-			default:
-				if (remainingContent.startsWith("//")) {
-					const newlineIndex = remainingContent.indexOf("\n");
-					return newlineIndex === -1
-						? content.length
-						: startIndex + newlineIndex;
-				}
-
-				if (remainingContent.startsWith("/*")) {
-					const blockEndIndex = remainingContent.indexOf("*/");
-					return blockEndIndex === -1
-						? content.length
-						: startIndex + blockEndIndex + 2;
-				}
-
-				return -1;
-		}
-	}
-
-	private isLicenseContent(content: string): boolean {
-		const licensePhrases = [
-			"copyright",
-			"license",
-			"licensed",
-			"licensing",
-			"mit license",
-			"apache license",
-			"gpl",
-			"bsd license",
-			"all rights reserved",
-			"permission is hereby granted",
-			"the above copyright notice",
-			"this software is provided",
-			"without warranty",
-			"limitation of liability",
-		];
-
-		const lowerContent = content.toLowerCase();
-		return licensePhrases.some((phrase) => lowerContent.includes(phrase));
-	}
-
-	private cleanLicenseContent(content: string): string {
-		return content
-			.replace(/^\s*\/\/\s*/gm, "")
-			.replace(/^\s*\/\*\s*/gm, "")
-			.replace(/\s*\*\/\s*$/gm, "")
-			.replace(/^\s*#\s*/gm, "")
-			.replace(/^\s*<!--\s*/gm, "")
-			.replace(/\s*-->\s*$/gm, "")
-			.replace(/^\s*"""\s*/gm, "")
-			.replace(/\s*"""\s*$/gm, "")
-			.replace(/^\s*\*\s*/gm, "")
-			.trim();
-	}
-
-	private blockBodyFormat(lines: string[]): string {
-		return lines.map((line) => ` * ${line.trim()}`).join("\n");
-	}
-
-	private linePrepend(line: string): string {
-		const trimmedLine = line.trim();
-
-		switch (this.language) {
-			case "javascript":
-			case "typescript":
-			case "java":
-			case "c":
-			case "cpp":
-			case "csharp":
-			case "go":
-			case "rust":
-			case "swift":
-			case "kotlin":
-			case "scala":
-			case "php":
-				return `// ${trimmedLine}`;
-			case "python":
-			case "ruby":
-			case "shell":
-				return `# ${trimmedLine}`;
-			case "html":
-			case "xml":
-				return `<!-- ${trimmedLine} -->`;
-			default:
-				return `// ${trimmedLine}`;
-		}
-	}
-
-	private blockPrepend(
-		line: string,
-		isStart: boolean,
-		isEnd: boolean
-	): string {
-		const trimmedLine = line.trim();
-
-		switch (this.language) {
-			case "javascript":
-			case "typescript":
-			case "java":
-			case "c":
-			case "cpp":
-			case "csharp":
-			case "go":
-			case "rust":
-			case "swift":
-			case "kotlin":
-			case "scala":
-			case "php":
-				if (isStart && isEnd) {
-					return `/* ${trimmedLine} */`;
-				}
-				if (isStart) {
-					return `/* ${trimmedLine}`;
-				}
-				if (isEnd) {
-					return ` * ${trimmedLine}\n */`;
-				}
-				return ` * ${trimmedLine}`;
-			case "python":
-				if (isStart && isEnd) {
-					return `""" ${trimmedLine} """`;
-				}
-				if (isStart) {
-					return `""" ${trimmedLine}`;
-				}
-				if (isEnd) {
-					return `${trimmedLine} """`;
-				}
-				return `${trimmedLine}`;
-			case "html":
-			case "xml":
-				if (isStart && isEnd) {
-					return `<!-- ${trimmedLine} -->`;
-				}
-				if (isStart) {
-					return `<!-- ${trimmedLine}`;
-				}
-				if (isEnd) {
-					return `${trimmedLine} -->`;
-				}
-				return `${trimmedLine}`;
-			default:
-				if (isStart && isEnd) {
-					return `/* ${trimmedLine} */`;
-				}
-				if (isStart) {
-					return `/* ${trimmedLine}`;
-				}
-				if (isEnd) {
-					return ` * ${trimmedLine}\n */`;
-				}
-				return ` * ${trimmedLine}`;
-		}
-	}
+function cleanLicenseContent(content: string): string {
+  return CLEAN_REPLACEMENTS.reduce(
+    (text, [pattern, replacement]) => text.replace(pattern, replacement),
+    content,
+  ).trim();
 }

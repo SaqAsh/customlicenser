@@ -1,8 +1,8 @@
-import levenshtein from "fast-levenshtein";
+import {distance} from 'fastest-levenshtein';
 
 export function typoDetector(
-	defaultLicense: string,
-	extractedLicense: string
+  defaultLicense: string,
+  extractedLicense: string,
 ): number {
-	return levenshtein.get(defaultLicense, extractedLicense);
+  return distance(defaultLicense, extractedLicense);
 }
