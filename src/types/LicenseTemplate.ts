@@ -1,6 +1,6 @@
-import { LicenseType } from "./LicenseType";
+import {type LicenseType} from './LicenseType';
 
-export type LicenseTemplate = {
-	name: LicenseType;
-	content: string;
-};
+export interface LicenseTemplate {
+  name: LicenseType;
+  content: string;
+}

@@ -1,5 +1,5 @@
-export type ExtractedLicense = {
-	content: string;
-	startingLine: number;
-	endingLine: number;
-};
+export interface ExtractedLicense {
+  content: string;
+  startingLine: number;
+  endingLine: number;
+}

@@ -1,68 +1,41 @@
-export type LineComment = {
-	type: "line";
-	prefix: string;
-};
-
-export type BlockComment = {
-	type: "block";
-	start: string;
-	end: string;
-};
-
-export type CommentInfo = LineComment | BlockComment;
-
-export type CommentLookupType = {
-	[key: string]: CommentInfo;
-};
-
-export type CommentLookupVal = CommentLookupType[string];
+import {type CommentStyle} from './CommentStyle';
 
 /**
- * Comment style lookup table for different programming languages.
+ * Language-ID → comment style lookup.
  *
- * Maps language IDs to their corresponding comment styles (line vs block).
- * Used by comment type manager for determining proper license formatting.
+ * Every comment-style object is declared once as a module-level constant
+ * so multiple languages that share a style share the same object reference,
+ * and so the list of c-style languages can be enumerated by `Object.keys`
+ * rather than copy-pasted.
  */
-export const CommentLookup: CommentLookupType = {
-	python: { type: "line", prefix: "# " },
-	javascript: { type: "block", start: "/*", end: " */" },
-	typescript: { type: "block", start: "/*", end: " */" },
-	typescriptreact: { type: "block", start: "/*", end: " */" },
-	javascriptreact: { type: "block", start: "/*", end: " */" },
-	jsx: { type: "block", start: "/*", end: " */" },
-	tsx: { type: "block", start: "/*", end: " */" },
-	cpp: { type: "block", start: "/*", end: " */" },
-	c: { type: "block", start: "/*", end: " */" },
-	java: { type: "block", start: "/*", end: " */" },
-	html: { type: "block", start: "<!--", end: " -->" },
-	csharp: { type: "block", start: "/*", end: " */" },
-	php: { type: "block", start: "/*", end: " */" },
-	go: { type: "block", start: "/*", end: " */" },
-	rust: { type: "block", start: "/*", end: " */" },
-	swift: { type: "block", start: "/*", end: " */" },
-	kotlin: { type: "block", start: "/*", end: " */" },
-	scala: { type: "block", start: "/*", end: " */" },
-	dart: { type: "block", start: "/*", end: " */" },
-	css: { type: "block", start: "/*", end: " */" },
-	scss: { type: "block", start: "/*", end: " */" },
-};
+const LINE_HASH: CommentStyle = {type: 'line', prefix: '# '};
+const BLOCK_SLASH: CommentStyle = {type: 'block', start: '/*', end: ' */'};
+const BLOCK_MARKUP: CommentStyle = {type: 'block', start: '<!--', end: ' -->'};
 
-export const Languages = [
-	"python",
-	"javascript",
-	"typescript",
-	"cpp",
-	"c",
-	"java",
-	"html",
-	"csharp",
-	"php",
-	"go",
-	"rust",
-	"swift",
-	"kotlin",
-	"scala",
-	"dart",
-	"css",
-	"scss",
-];
+const C_STYLE_LANGUAGES = [
+  'javascript',
+  'typescript',
+  'typescriptreact',
+  'javascriptreact',
+  'jsx',
+  'tsx',
+  'cpp',
+  'c',
+  'java',
+  'csharp',
+  'php',
+  'go',
+  'rust',
+  'swift',
+  'kotlin',
+  'scala',
+  'dart',
+  'css',
+  'scss',
+] as const;
+
+export const CommentLookup: Readonly<Record<string, CommentStyle>> = {
+  python: LINE_HASH,
+  html: BLOCK_MARKUP,
+  ...Object.fromEntries(C_STYLE_LANGUAGES.map(lang => [lang, BLOCK_SLASH])),
+};
