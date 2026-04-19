@@ -1,21 +1,11 @@
-import * as vscode from "vscode";
-import { MessageItem } from "vscode";
+import * as vscode from 'vscode';
 
 /**
- * Displays an error message to the user and logs it to the console.
- * @param message Error message to display
- * @param error Optional Error object for additional context
+ * Logs an error to the console and surfaces a non-modal error toast.
+ * Fire-and-forget: the returned toast promise is intentionally detached
+ * because no call site waits on the user's response.
  */
-const error = async <T extends MessageItem>(
-    message: string,
-    error?: Error,
-    items?: T[]
-): Promise<T | undefined> => {
-    console.error(message, error);
-    return await vscode.window.showErrorMessage(
-        `Error: ${message}`,
-        ...(items || [])
-    );
-};
-
-export default error;
+export function error(message: string, err?: Error): void {
+  console.error(message, err);
+  void vscode.window.showErrorMessage(`Error: ${message}`);
+}

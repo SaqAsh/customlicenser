@@ -1,3 +1,3 @@
-export { default as error } from "./error";
-export { default as info } from "./info";
-export { default as warn } from "./warn";
+export {error} from './error';
+export {info} from './info';
+export {warn} from './warn';
