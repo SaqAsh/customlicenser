@@ -1,173 +1,121 @@
+import {ERROR_MESSAGES} from '../constants';
+import {error} from '../loggers';
 import {
-	APACHE_TEMPLATE,
-	BSD_TEMPLATE,
-	ERROR_MESSAGES,
-	GPL_TEMPLATE,
-	ISC_TEMPLATE,
-	MIT_TEMPLATE,
-	MOZILLA_TEMPLATE,
-} from "../constants";
-import { error } from "../loggers";
-import { LicenseTemplate, LicenseType, Result } from "../types";
-import { IConfigService, ITemplateService } from "./interfaces";
+  isStandardLicenseType,
+  type LicenseTemplate,
+  type LicenseType,
+  type Result,
+} from '../types';
+import {type IConfigService, type ITemplateService} from './interfaces';
+import {type TemplateLoader} from './template-loader';
+
+const PLACEHOLDERS = [
+  {pattern: /\{\{year\}\}/gi, field: 'year'},
+  {pattern: /\{\{name\}\}/gi, field: 'authorName'},
+] as const;
 
 export class TemplateService implements ITemplateService {
-	readonly currentTemplate: LicenseTemplate;
-	readonly defaultLicenseTemplate: LicenseTemplate;
-	readonly allTemplates: LicenseTemplate[];
+  constructor(
+    private readonly configService: IConfigService,
+    private readonly templateLoader: TemplateLoader,
+  ) {}
 
-	readonly configService: IConfigService;
+  get allCustomTemplates(): LicenseTemplate[] {
+    return this.configService.allCustomTemplates;
+  }
 
-	private readonly licenseTemplates: Record<string, string> = {
-		mit: MIT_TEMPLATE,
-		apache: APACHE_TEMPLATE,
-		bsd: BSD_TEMPLATE,
-		gpl: GPL_TEMPLATE,
-		isc: ISC_TEMPLATE,
-		mozilla: MOZILLA_TEMPLATE,
-	};
+  async processTemplate(
+    template: LicenseTemplate,
+  ): Promise<Result<LicenseTemplate, Error>> {
+    if (!template.content) {
+      return [
+        null,
+        new Error(`${ERROR_MESSAGES.TEMPLATE_NOT_FOUND}: ${template.name}`),
+      ];
+    }
 
-	constructor(
-		configService: IConfigService,
-		currentTemplate: LicenseTemplate
-	) {
-		this.configService = configService;
-		this.currentTemplate = currentTemplate;
-		this.defaultLicenseTemplate = this.configService.defaultLicense;
-		this.allTemplates = this.configService.allTemplates;
-	}
+    const values = {
+      year: this.configService.year || new Date().getFullYear().toString(),
+      authorName: this.configService.authorName || 'Your Name',
+    };
 
-	async processTemplate(
-		template: LicenseTemplate
-	): Promise<Result<LicenseTemplate, Error>> {
-		if (template.content === undefined || template.content === "") {
-			const errMsg = `${ERROR_MESSAGES.TEMPLATE_NOT_FOUND}: ${template.name}`;
-			return [null, new Error(errMsg)];
-		}
+    const content = PLACEHOLDERS.reduce(
+      (text, {pattern, field}) => text.replace(pattern, values[field]),
+      template.content,
+    );
 
-		try {
-			const year = this.configService.year;
-			const authorName = this.configService.authorName || "Your Name";
+    return [{...template, content}, null];
+  }
 
-			// Check if we have valid replacement values
-			if (!year) {
-				const errMsg = `Missing year configuration: year=${year}`;
-				return [null, new Error(errMsg)];
-			}
+  async getTemplate(
+    licenseType: LicenseType,
+  ): Promise<Result<LicenseTemplate, Error>> {
+    if (isStandardLicenseType(licenseType)) {
+      try {
+        const content = await this.templateLoader.load(licenseType);
+        return [{name: licenseType, content}, null];
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const errMsg = `Failed to load bundled ${licenseType} template: ${message}`;
+        error(`Template service: ${errMsg}`);
+        return [null, new Error(errMsg)];
+      }
+    }
 
-			const processedContent = template.content
-				.replace(/\{\{year\}\}/gi, year)
-				.replace(/\{\{name\}\}/gi, authorName);
+    const customTemplate = this.configService.allCustomTemplates.find(
+      template => template.name === licenseType,
+    );
+    if (customTemplate) {
+      return [customTemplate, null];
+    }
 
-			const processedTemplate = {
-				...template,
-				content: processedContent,
-			};
+    const errMsg = `${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${licenseType}`;
+    error(`Template service: ${errMsg}`);
+    return [null, new Error(errMsg)];
+  }
 
-			return [processedTemplate, null];
-		} catch (error) {
-			return [
-				null,
-				error instanceof Error ? error : new Error(String(error)),
-			];
-		}
-	}
+  async createCustomTemplate(name: string, content: string): Promise<void> {
+    assertNonEmpty(name, 'Template name');
+    assertNonEmpty(content, 'Template content');
 
-	get allCustomTemplates(): LicenseTemplate[] {
-		return this.configService.allCustomTemplates;
-	}
+    const current = this.configService.allCustomTemplates;
+    if (current.some(template => template.name === name)) {
+      throw new Error(`Template with name "${name}" already exists`);
+    }
+    await this.configService.updateCustomTemplates([
+      ...current,
+      {name, content},
+    ]);
+  }
 
-	async getTemplate(
-		licenseType: LicenseType
-	): Promise<Result<LicenseTemplate, Error>> {
-		// First check standard templates
-		const templateContent = this.licenseTemplates[licenseType];
-		if (templateContent !== undefined) {
-			return [
-				{
-					name: licenseType,
-					content: templateContent,
-				},
-				null,
-			];
-		}
+  async updateCustomTemplate(name: string, content: string): Promise<void> {
+    assertNonEmpty(name, 'Template name');
+    assertNonEmpty(content, 'Template content');
 
-		// Then check custom templates
-		const customTemplate = this.configService.allCustomTemplates.find(
-			(template) => template.name === licenseType
-		);
-		if (customTemplate) {
-			return [customTemplate, null];
-		}
+    const current = this.configService.allCustomTemplates;
+    const next = current.map(template =>
+      template.name === name ? {name, content} : template,
+    );
+    if (!current.some(t => t.name === name)) {
+      throw new Error(`Template with name "${name}" not found`);
+    }
+    await this.configService.updateCustomTemplates(next);
+  }
 
-		// Template not found in either standard or custom templates
-		const errMsg = `${ERROR_MESSAGES.TEMPLATE_NOT_FOUND} ${licenseType}`;
-		error(`Template service: ${errMsg}`);
-		return [null, new Error(errMsg)];
-	}
+  async deleteCustomTemplate(name: string): Promise<void> {
+    assertNonEmpty(name, 'Template name');
 
-	public async createCustomTemplate(
-		name: string,
-		content: string
-	): Promise<void> {
-		const newTemplate: LicenseTemplate = {
-			name: name as LicenseType,
-			content,
-		};
+    const current = this.configService.allCustomTemplates;
+    const next = current.filter(template => template.name !== name);
+    if (next.length === current.length) {
+      throw new Error(`Template with name "${name}" not found`);
+    }
+    await this.configService.updateCustomTemplates(next);
+  }
+}
 
-		const currentTemplates: LicenseTemplate[] =
-			this.configService.allCustomTemplates;
-
-		const existingTemplate = currentTemplates.find(
-			(template) => template.name === name
-		);
-		if (existingTemplate) {
-			error(`Template with name "${name}" already exists`);
-			return;
-		}
-
-		const updatedTemplates = [...currentTemplates, newTemplate];
-		await this.configService.updateCustomTemplates(updatedTemplates);
-	}
-
-	public async updateCustomTemplate(
-		name: string,
-		content: string
-	): Promise<void> {
-		const currentTemplates: LicenseTemplate[] =
-			this.configService.allCustomTemplates;
-
-		const templateIndex = currentTemplates.findIndex(
-			(template) => template.name === name
-		);
-		if (templateIndex === -1) {
-			const errMsg = `Template with name "${name}" not found`;
-			error(errMsg);
-			return;
-		}
-
-		const updatedTemplates = [...currentTemplates];
-		updatedTemplates[templateIndex] = {
-			name: name as LicenseType,
-			content,
-		};
-
-		await this.configService.updateCustomTemplates(updatedTemplates);
-	}
-
-	public async deleteCustomTemplate(name: string): Promise<void> {
-		const currentTemplates: LicenseTemplate[] =
-			this.configService.allCustomTemplates;
-
-		const updatedTemplates = currentTemplates.filter(
-			(template) => template.name !== name
-		);
-
-		if (updatedTemplates.length === currentTemplates.length) {
-			error(`Template with name "${name}" not found`);
-			return;
-		}
-
-		await this.configService.updateCustomTemplates(updatedTemplates);
-	}
+function assertNonEmpty(value: string, label: string): void {
+  if (!value || value.trim().length === 0) {
+    throw new Error(`${label} cannot be empty`);
+  }
 }

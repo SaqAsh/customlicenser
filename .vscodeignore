@@ -6,12 +6,14 @@ src/**
 .gitignore
 .yarnrc
 esbuild.js
+eslint.config.js
+eslint.config.mjs
+.prettierrc.json
 vsc-extension-quickstart.md
 **/tsconfig.json
-**/eslint.config.mjs
-**/*.map
 **/*.ts
 **/.vscode-test.*
 README_backup.md
 DEVELOPMENT_GUIDE.md
 CHANGELOG.md
+STANDARDS.md
