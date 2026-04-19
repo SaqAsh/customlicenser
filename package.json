@@ -1,276 +1,203 @@
 {
-	"name": "customlicenser",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/SaqAsh/customlicenser"
-	},
-	"displayName": "CustomLicenser",
-	"description": "A flexible licensing tool that lets you choose from standard licenses or create your own custom terms—perfect for developers, creators, and teams who need control over how their work is shared and used.",
-	"version": "0.0.4",
-	"publisher": "saqash-dev",
-	"icon": "icon.png",
-	"engines": {
-		"vscode": "^1.102.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onStartupFinished",
-		"onLanguage:javascript",
-		"onLanguage:typescript",
-		"onLanguage:python",
-		"onLanguage:java",
-		"onLanguage:cpp",
-		"onLanguage:c"
-	],
-	"main": "./dist/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "customlicenser.addMITLicense",
-				"title": "Add MIT License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addGPLLicense",
-				"title": "Add GPL v3 License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addApacheLicense",
-				"title": "Add Apache 2.0 License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addBSDLicense",
-				"title": "Add BSD 3-Clause License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addISCLicense",
-				"title": "Add ISC License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addMozillaLicense",
-				"title": "Add Mozilla Public License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.selectLicense",
-				"title": "Select License to Add",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.toggleAutoSave",
-				"title": "Toggle Auto Add On Save",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.toggleAutoCorrect",
-				"title": "Toggle Auto-Correct On Save",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addYear",
-				"title": "Add Year",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.addName",
-				"title": "Add Author Name",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.selectDefaultLicense",
-				"title": "Select Default License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.createCustomLicense",
-				"title": "Create Custom License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.editCustomLicense",
-				"title": "Edit Custom License",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.configureSettings",
-				"title": "Configure Settings",
-				"category": "CustomLicenser"
-			},
-			{
-				"command": "customlicenser.test",
-				"title": "Run Tests",
-				"category": "CustomLicenser"
-			}
-		],
-		"configuration": {
-			"title": "CustomLicenser",
-			"properties": {
-				"customlicenser.defaultAuthor": {
-					"type": "string",
-					"default": "",
-					"description": "Default author name for license headers"
-				},
-				"customlicenser.defaultEmail": {
-					"type": "string",
-					"default": "",
-					"description": "Default email for license headers"
-				},
-				"customlicenser.autoInsertOnSave": {
-					"type": "boolean",
-					"default": false,
-					"description": "Automatically add license to new files on save"
-				},
-				"customlicenser.fileExtensions": {
-					"type": "array",
-					"default": [
-						".js",
-						".ts",
-						".py",
-						".java",
-						".cpp"
-					],
-					"description": "File types to auto-license"
-				},
-				"customlicenser.headerStyle": {
-					"type": "string",
-					"default": "block-comment",
-					"enum": [
-						"block-comment",
-						"line-comment",
-						"hash-comment"
-					],
-					"description": "Comment style for license headers"
-				},
-				"customlicenser.insertAtTop": {
-					"type": "boolean",
-					"default": true,
-					"description": "Insert license at file beginning"
-				},
-				"customlicenser.skipExistingLicense": {
-					"type": "boolean",
-					"default": true,
-					"description": "Skip files that already have licenses"
-				},
-				"customlicenser.customLicenses": {
-					"type": "array",
-					"default": [],
-					"description": "Custom license templates",
-					"items": {
-						"type": "object",
-						"properties": {
-							"id": {
-								"type": "string",
-								"description": "Unique identifier for the custom license"
-							},
-							"name": {
-								"type": "string",
-								"description": "Display name for the custom license"
-							},
-							"content": {
-								"type": "string",
-								"description": "License content text"
-							}
-						},
-						"required": [
-							"id",
-							"name",
-							"content"
-						]
-					}
-				},
-				"customlicenser.authorName": {
-					"type": "string",
-					"default": "Your Name",
-					"description": "Author name for license headers"
-				},
-				"customlicenser.authorEmail": {
-					"type": "string",
-					"default": "your.email@example.com",
-					"description": "Author email for license headers"
-				},
-				"customlicenser.year": {
-					"type": "string",
-					"default": "2024",
-					"description": "Year for license headers"
-				},
-				"customlicenser.toggleOnSave": {
-					"type": "boolean",
-					"default": false,
-					"description": "Enable auto-add license on save"
-				},
-				"customlicenser.autoCorrect": {
-					"type": "boolean",
-					"default": false,
-					"description": "Enable auto-correct license on save"
-				},
-				"customlicenser.customTemplates": {
-					"type": "array",
-					"default": [],
-					"description": "Custom license templates",
-					"items": {
-						"type": "object",
-						"properties": {
-							"name": {
-								"type": "string",
-								"description": "Template name"
-							},
-							"content": {
-								"type": "string",
-								"description": "Template content"
-							}
-						},
-						"required": [
-							"name",
-							"content"
-						]
-					}
-				},
-				"customlicenser.defaultLicense": {
-					"type": "object",
-					"default": {
-						"name": "mit",
-						"content": ""
-					},
-					"description": "Default license template",
-					"properties": {
-						"name": {
-							"type": "string",
-							"description": "License name"
-						},
-						"content": {
-							"type": "string",
-							"description": "License content"
-						}
-					}
-				}
-			}
-		}
-	},
-	"scripts": {
-		"compile": "npx esbuild src/extension.ts --bundle --format=cjs --platform=node --outfile=dist/extension.js --external:vscode",
-		"build": "npm run compile"
-	},
-	"devDependencies": {
-		"@types/fast-levenshtein": "^0.0.4",
-		"@types/mocha": "^10.0.10",
-		"@types/node": "20.x",
-		"@types/vscode": "^1.102.0",
-		"@typescript-eslint/eslint-plugin": "^8.31.1",
-		"@typescript-eslint/parser": "^8.31.1",
-		"@vscode/test-cli": "^0.0.11",
-		"@vscode/test-electron": "^2.5.2",
-		"esbuild": "^0.25.3",
-		"eslint": "^9.25.1",
-		"npm-run-all": "^4.1.5",
-		"typescript": "^5.8.3"
-	},
-	"dependencies": {
-		"fast-levenshtein": "^3.0.0"
-	}
+  "name": "customlicenser",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SaqAsh/customlicenser"
+  },
+  "displayName": "CustomLicenser",
+  "description": "A flexible licensing tool that lets you choose from standard licenses or create your own custom terms—perfect for developers, creators, and teams who need control over how their work is shared and used.",
+  "version": "0.0.4",
+  "publisher": "saqash-dev",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.102.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "customlicenser.addMITLicense",
+        "title": "Add MIT License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.addGPLLicense",
+        "title": "Add GPL v3 License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.addApacheLicense",
+        "title": "Add Apache 2.0 License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.addBSDLicense",
+        "title": "Add BSD 3-Clause License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.addISCLicense",
+        "title": "Add ISC License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.addMozillaLicense",
+        "title": "Add Mozilla Public License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.selectLicense",
+        "title": "Select License to Add",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.toggleAutoSave",
+        "title": "Toggle Auto Add On Save",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.toggleAutoCorrect",
+        "title": "Toggle Auto-Correct On Save",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.addYear",
+        "title": "Add Year",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.addName",
+        "title": "Add Author Name",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.selectDefaultLicense",
+        "title": "Select Default License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.createCustomLicense",
+        "title": "Create Custom License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.editCustomLicense",
+        "title": "Edit Custom License",
+        "category": "CustomLicenser"
+      },
+      {
+        "command": "customlicenser.configureSettings",
+        "title": "Configure Settings",
+        "category": "CustomLicenser"
+      }
+    ],
+    "configuration": {
+      "title": "CustomLicenser",
+      "properties": {
+        "customlicenser.authorName": {
+          "type": "string",
+          "default": "Your Name",
+          "description": "Author name used in license headers."
+        },
+        "customlicenser.year": {
+          "type": "string",
+          "default": "",
+          "description": "Year used in license headers. Defaults to the current year when empty."
+        },
+        "customlicenser.toggleOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically add the default license to a file when it is saved."
+        },
+        "customlicenser.autoCorrect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically correct drifted license headers on save to match the default template."
+        },
+        "customlicenser.defaultLicense": {
+          "type": "object",
+          "default": {
+            "name": "mit",
+            "content": ""
+          },
+          "description": "Default license template used by auto-insert and auto-correct.",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "License identifier (e.g. mit, apache, gpl, bsd, isc, mozilla, or the name of a custom template)."
+            },
+            "content": {
+              "type": "string",
+              "description": "Resolved license content. Left blank for built-in licenses."
+            }
+          },
+          "required": [
+            "name",
+            "content"
+          ]
+        },
+        "customlicenser.typoThreshold": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 0,
+          "description": "Maximum Levenshtein distance tolerated between the existing license header and the default template before auto-correct rewrites the header. Set to 0 for exact-match."
+        },
+        "customlicenser.customTemplates": {
+          "type": "array",
+          "default": [],
+          "description": "User-defined license templates. Managed via the 'Create Custom License' and 'Edit Custom License' commands.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Template identifier."
+              },
+              "content": {
+                "type": "string",
+                "description": "Template body. Supports {{year}} and {{name}} placeholders."
+              }
+            },
+            "required": [
+              "name",
+              "content"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "esbuild src/extension.ts --bundle --format=cjs --platform=node --outfile=dist/extension.js --external:vscode --minify --sourcemap --target=node18 --legal-comments=none",
+    "compile:dev": "esbuild src/extension.ts --bundle --format=cjs --platform=node --outfile=dist/extension.js --external:vscode --sourcemap",
+    "build": "npm run compile",
+    "check": "tsc --noEmit",
+    "lint": "eslint src",
+    "fix": "gts fix",
+    "clean": "gts clean"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.102.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "gts": "^7.0.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "fastest-levenshtein": "^1.0.16"
+  }
 }
